@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+//const Role = require('../helpers/role');
 
 const loginTokenSchema = new Schema({
     userID:{

@@ -19,6 +19,9 @@ const getListsQuery=gql`
             listIndexes{
                 description
             }
+            users{
+                name
+            } 
         }
     }
 `

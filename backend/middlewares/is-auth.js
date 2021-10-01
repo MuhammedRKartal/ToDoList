@@ -46,5 +46,6 @@ module.exports = (req,res,next)=>{
     req.isAuth = true;
     req.email = decodedToken.email;
     req.userID = decodedToken.userID;
+    //req.isAdmin = decodedToken.isAdmin;
     return next();
 }

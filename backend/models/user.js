@@ -18,10 +18,15 @@ const userSchema = new Schema({
         required:true,
         trim:true
     },
-    departments:[String],
-    role:{
-        type:String,
-        default: Role.User
+    groupNames:[{
+        type:String
+    }],
+    listNames:[{
+        type:String
+    }],
+    isAdmin:{
+        type:Boolean,
+        default: false
     }
 })
 

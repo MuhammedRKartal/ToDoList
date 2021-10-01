@@ -15,8 +15,9 @@ const listIndexSchema = new Schema({
         type:Boolean,
         default:false,
     },
-    listName:{
-        type:String,
+    listID:{
+        type:Schema.Types.ObjectId, 
+        ref: 'List', 
         required:true
     }
 })

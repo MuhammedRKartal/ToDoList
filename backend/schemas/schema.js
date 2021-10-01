@@ -1,9 +1,9 @@
 //helpers
-/*
-const typeOfList = require('../helpers/list-type')
-const role = require('../helpers/role');
-const importancy = require('../helpers/importancy')
-*/
+
+const TypeOfList = require('../helpers/list-type')
+const Role = require('../helpers/role');
+const Importancy = require('../helpers/importancy')
+
 const userAuthorityList = require('../helpers/list-user-authority')
 
 //authentication
@@ -29,7 +29,8 @@ const {GraphQLObjectType,
 const User = require('../models/user');
 const List = require('../models/list')
 const listIndex = require('../models/list-index');
-const user = require('../models/user');
+const Group = require('../models/group');
+
 
 
 
@@ -39,7 +40,34 @@ const userType = new GraphQLObjectType({
     fields:()=>({
         name:{type:GraphQLString},
         email:{type:GraphQLString},
-        password:{type:GraphQLString}
+        password:{type:GraphQLString},
+        role:{type:GraphQLString},
+        group:{
+            type: new GraphQLList(groupType),
+            resolve(parent,args){
+                return Group.find({users:parent.email})
+            }
+        },
+        lists:{
+            type: new GraphQLList(listType),
+            resolve(parent,args){
+                return List.find({users:parent.email})
+            }
+        }
+    })
+})
+
+const groupType = new GraphQLObjectType({
+    name:'group',
+    fields:()=>({
+        name:{type:GraphQLString},
+        leadMail:{type:GraphQLString},
+        users:{
+            type: new GraphQLList(userType),
+            resolve(parent,args){
+                return User.find({groupNames:parent.name});
+            }
+        }
     })
 })
 
@@ -49,21 +77,26 @@ const listType = new GraphQLObjectType({
     fields:()=>({
         name:{type:GraphQLString},
         type:{type:GraphQLString},
+        group:{type:GraphQLString},
         listIndexes:{
             type: new GraphQLList(listIndexType),
             resolve(parent,args){
-                return listIndex.find({listName:parent.name});//.populate().listName;
+                console.log(parent.users);
+                return listIndex.find({listID:parent._id});//.populate().listName;
             }
         },
         users:{
+            type: new GraphQLList(userType),
             resolve(parent,args){
-                const user = parent.users;
-                /*Array.from(user).forEach(child=>{
-                    return child.uID,child.authority
-                })*/
-                return User.find({$match:{id:parent.users.uID}});
+                return User.find({listNames:parent.name})
             }
-            
+        },
+        admins:{
+            type: new GraphQLList(userType),
+            resolve(parent,args){
+                const user = User.find({listNames:parent.name})
+                return user.admins
+            }
         }
     })
 })
@@ -74,7 +107,7 @@ const listIndexType = new GraphQLObjectType({
         description:{type:GraphQLString},
         importancy:{type:GraphQLString},
         isDone:{type:GraphQLBoolean},
-        listName:{type:GraphQLString}
+        listID:{type:GraphQLString}
     })
 })
 
@@ -110,7 +143,7 @@ const RootQuery = new GraphQLObjectType({
                     }
                     else{
                         //create a token to sign in it expires in 30 mins
-                        const token = jwt.sign({email: user.email, userID: user.id}, process.env.ACCESS_TOKEN_SECRET, {expiresIn:'2h'}); 
+                        const token = jwt.sign({email: user.email, userID: user.id}, process.env.ACCESS_TOKEN_SECRET, {expiresIn:'10h'}); 
                         //return the user.id, email and the token
                         return {userID:user.id, email:user.email, token:token}; 
                     }
@@ -120,9 +153,33 @@ const RootQuery = new GraphQLObjectType({
         getLists:{
             type: new GraphQLList(listType),
             resolve:async (parent,args,req)=>{
-                return await List.find({users:{$elemMatch:{uID:req.userID}}})
+                //return await List.find({users:{$elemMatch:{userMail:req.email}}})
+                return await List.find({users:req.email})
+            }
+        },
+        
+        getUsersOfList:{
+            type: new GraphQLList(userType),
+            args:{
+                listId:{type:GraphQLString}
+            },
+            resolve:async(parent,args)=>{
+                const list = await List.findById(args.listId);
+                return await User.find({listNames:list.name});
+            }
+        },
+        
+        getAdminsOfList:{
+            type: new GraphQLList(userType),
+            args:{
+                listId:{type:GraphQLString}
+            },
+            resolve:async(parent,args)=>{
+                const list = await List.findById(args.listId);
+                return await User.find({listNames:list.name}).admins;
             }
         }
+        
         
     }
 })
@@ -135,7 +192,8 @@ const Mutation = new GraphQLObjectType({
             args:{
                 name:{type:new GraphQLNonNull(GraphQLString)},
                 email:{type: new GraphQLNonNull(GraphQLString)},
-                password:{type: new GraphQLNonNull(GraphQLString)}
+                password:{type: new GraphQLNonNull(GraphQLString)},
+                isAdmin:{type: GraphQLBoolean}
             },
             resolve: async(parent,args)=>{
                 const existingUser = await User.findOne({email: args.email});
@@ -147,7 +205,8 @@ const Mutation = new GraphQLObjectType({
                     let user = new User({
                         name:args.name,
                         email:args.email,
-                        password:hashedPassword
+                        password:hashedPassword,
+                        isAdmin:args.isAdmin
                     })
                     return await user.save();
                 }
@@ -176,20 +235,32 @@ const Mutation = new GraphQLObjectType({
             type:listType,
             args:{
                 name:{type: GraphQLString},
-                type:{type: GraphQLString}
+                type:{type: GraphQLString},
+                group:{type: GraphQLString}
             },
             resolve: async(parent,args,req)=>{
+                console.log(req)
                 const user = await User.findOne({email:req.email})
+                /*if(user.isAdmin === true){
 
-                const list = new List({
-                    name:args.name,
-                    type:args.type,
-                    users:{
-                        uID: user, 
-                        authority: userAuthorityList.Admin
-                    }
-                })
-                return list.save()
+                }*/
+                if(user!== null){
+                    let list = null;
+                    //const leadCheck = await Group.find({admins:req.email,name:args.group});
+                    list = new List({
+                        name:args.name,
+                        type:args.type,
+                        group:args.group,
+                        users:req.email,
+                        admins:req.email
+                    })
+                    await user.updateOne({$addToSet:{listNames:args.name}})
+                    return await list.save()
+                }
+                else{
+                    throw new Error("User not found");
+                }
+                
             }
         },
         addListIndex:{
@@ -197,38 +268,78 @@ const Mutation = new GraphQLObjectType({
             args:{
                 description:{type:GraphQLString},
                 importancy:{type:GraphQLString},
-                listName:{type:GraphQLString}
+                listID:{type:GraphQLString}
             },
             resolve: async(parent,args,req)=>{
-                const listM = List.findOne({name:args.listName}); //Eğer ID yi bulamazsa mantıklı error dönmeli (yapılacak)
+                //const listM = List.findOneByID({_id:args.listID}); //Eğer ID yi bulamazsa mantıklı error dönmeli (yapılacak)
+                const listM = List.findById(args.listID);
+              
+                let listE = new listIndex({
+                    description:args.description,
+                    importancy:args.importancy,
+                    listID:args.listID
+                })
+                    
+                await listM.updateOne({$addToSet:{listIndexes: listE}})
+                return listE.save()
+            }
+        },
+        createGroup:{
+            type:groupType,
+            args:{
+                name:{type:GraphQLString}
+            },
+            resolve: async (parent,args,req)=>{
+                if(req.isAdmin === false){
+                    console.log('This is user')
+                }
+                const group = new Group({
+                    name:args.name,
+                    leadMail:req.email,
+                    users:req.email
+                })
+                await User.findByIdAndUpdate(req.userID,{$addToSet:{groupNames:args.name}})
+                return await group.save();
+            }
+        },
+        removeUser:{
+            type:userType,
+            args:{
+                email:{type:GraphQLString},
+            },
+            resolve: async(parent,args)=>{
+                await User.findOneAndRemove({email:args.email});
 
-                if (args.description === null){
-                    throw new Error("Enter a description")
-                }
-                else if(args.listName === null){
-                    throw new Error("Enter a list name")
-                }
-                else if (args.description === null && args.listName === null){
-                    throw new Error("Enter description and list name")
-                }
-                else{
-                    let listE = null;
-                    if(args.importancy === null){
-                        listE = new listIndex({
-                            description:args.description,
-                            listName:args.listName
-                        })
-                    }
-                    else{
-                        listE = new listIndex({
-                            description:args.description,
-                            importancy:args.importancy,
-                            listName:args.listName
-                        })
-                    }
-                    await listM.updateOne({$addToSet:{listIndexes: listE}})
-                    return listE.save()
-                }
+                const list = List.find({users:args.email})
+                await list.updateMany({$pull:{users:args.email}})
+
+                const list1 = List.find({admins:args.email})
+                await list1.updateMany({$pull:{admins:args.email}})
+
+                const group = Group.find({users:args.email})
+                await group.updateMany({$pull:{users:args.email}})
+
+                const group1 = Group.find({leadMail:args.email})
+                await group1.updateMany({leadMail:null})
+            }
+        },
+        removeList:{
+            type:userType,
+            args:{
+                listId:{type:GraphQLString}
+            },
+            resolve: async(parent,args)=>{
+                const list = await List.findById(args.listId).name;
+                console.log(list);
+                const user = User.find({listNames:list})
+                await user.updateMany({$pull:{listNames:list}})
+
+                //const liindex = listIndex.find({listID:args.listId})
+                //await liindex.remove({listID:args.listId})
+                //await list.remove({_id:args.listId})
+                
+
+                
             }
         }
         
