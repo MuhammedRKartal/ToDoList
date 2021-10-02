@@ -6,7 +6,7 @@ require('dotenv').config();
 const publicPaths = ["/graphql/login", "/graphql/register"]
 
 const checkPublicPath =(path)=>{
-    return publicPaths.some(endpoint=>endpoint.indexOf(path)!==-1)
+    return publicPaths.some(endpoint=>endpoint === path)
 }
 
 module.exports = (req,res,next)=>{
@@ -14,7 +14,7 @@ module.exports = (req,res,next)=>{
         return next()
     }
     
-    const authHeader = req.get('Authorization');
+    const authHeader = req.get('Authorization') || req.get('authorization');
     if(!authHeader){
         req.isAuth = false;
         res.json({

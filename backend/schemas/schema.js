@@ -162,7 +162,7 @@ const RootQuery = new GraphQLObjectType({
         getLists:{
             type: new GraphQLList(listType),
             resolve:async (parent,args,req)=>{
-                console.log(req.email, req.name, req.userID);
+                
                 return await List.find({users:req.email}) 
                 //return await List.find({users:{$elemMatch:{userMail:req.email}}})           
             }
