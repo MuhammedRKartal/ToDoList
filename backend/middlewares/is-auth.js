@@ -5,17 +5,19 @@ require('dotenv').config();
 
 const publicPaths = ["/graphql/login", "/graphql/register"]
 
-const checkPublicPath =(path)=>{
-    return publicPaths.some(endpoint=>endpoint === path)
+const checkPublicPath =(path, token)=>{
+    return publicPaths.some(endpoint=>endpoint === path) || token ==='Bearer login'
 }
 
 module.exports = (req,res,next)=>{
-    if(checkPublicPath(req.originalUrl)){
+    const authHeader = req.get('Authorization') || req.get('authorization');
+
+    if(checkPublicPath(req.originalUrl, authHeader)){
         return next()
     }
-    
-    const authHeader = req.get('Authorization') || req.get('authorization');
+
     if(!authHeader){
+       
         req.isAuth = false;
         res.json({
             message:'Unauthenticated',
@@ -25,6 +27,7 @@ module.exports = (req,res,next)=>{
     }
     const token = authHeader.split(' ')[1];
     if(!token || token === ''){
+        
         req.isAuth = false;
         res.json({
             message:'Unauthenticated',
@@ -34,9 +37,11 @@ module.exports = (req,res,next)=>{
     }
     let decodedToken;
     try{
+        
         decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
     }
     catch(err){
+        
         req.isAuth = false;
         res.json({
             message:'Unauthenticated',
@@ -45,6 +50,7 @@ module.exports = (req,res,next)=>{
         return res;
     }
     if (!decodedToken){
+        
         req.isAuth = false;
         res.json({
             message:'Unauthenticated',

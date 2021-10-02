@@ -22,7 +22,10 @@ const listSchema = new Schema({
     admins: [{
         type:String,
         required:true  
-    }]
+    }],
+    description:{
+        type:String
+    }
     
 }) 
 

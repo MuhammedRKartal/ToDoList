@@ -1,5 +1,4 @@
 //helpers
-
 const TypeOfList = require('../helpers/list-type')
 const Role = require('../helpers/role');
 const Importancy = require('../helpers/importancy')
@@ -31,6 +30,7 @@ const User = require('../models/user');
 const List = require('../models/list')
 const listItem = require('../models/list-item');
 const Group = require('../models/group');
+const Log = require("../models/logs");
 
 
 
@@ -65,6 +65,7 @@ const userType = new GraphQLObjectType({
 const groupType = new GraphQLObjectType({
     name:'group',
     fields:()=>({
+        id:{type:GraphQLString},
         name:{type:GraphQLString},
         leadMail:{type:GraphQLString},
         users:{
@@ -80,9 +81,11 @@ const groupType = new GraphQLObjectType({
 const listType = new GraphQLObjectType({
     name:'list',
     fields:()=>({
+        id:{type:GraphQLID},
         name:{type:GraphQLString},
         type:{type:GraphQLString},
         group:{type:GraphQLString},
+        description:{type:GraphQLString},
         listItems:{
             type: new GraphQLList(listItemType),
             resolve(parent,args){
@@ -109,6 +112,7 @@ const listType = new GraphQLObjectType({
 const listItemType = new GraphQLObjectType({
     name:'listItem',
     fields:()=>({
+        
         description:{type:GraphQLString},
         importancy:{type:GraphQLString},
         isDone:{type:GraphQLBoolean},
@@ -126,6 +130,15 @@ const loginTokenType = new GraphQLObjectType({
         groupNames:{type:new GraphQLList(GraphQLString)},
         listNames:{type:new GraphQLList(GraphQLString)},
         isAdmin:{type:GraphQLBoolean}
+    })
+})
+
+const logType = new GraphQLObjectType({
+    name:"Log",
+    field:()=>({
+        email:{type:GraphQLString},
+        operation:{type:GraphQLString},
+        time:{type:Date}
     })
 })
 
@@ -148,12 +161,26 @@ const RootQuery = new GraphQLObjectType({
                 else{
                     const isEqual = await bcrypt.compare(args.password, user.password); //hashing the password to store in database (security)
                     if(!isEqual){
+                        let logT = new Log({
+                            email: args.email,
+                            operation: "Entered Wrong Password",
+                            time:Date.now()
+                        })
+                        logT.save()
                         throw new Error('Wrong password');
+                        
                     }
                     else{
                         //create a token to sign in it expires in 30 mins
                         const token = jwt.sign({userID:user.id, email:user.email,name:user.name,groupNames:user.groupNames,listNames:user.listNames,isAdmin:user.isAdmin}, process.env.ACCESS_TOKEN_SECRET, {expiresIn:'10h'}); 
                         //return the user.id, email and the token
+                        let logT = new Log({
+                            email: user.email,
+                            operation: "login",
+                            time:Date.now()
+                        })
+                        logT.save()
+
                         return {userID:user.id, email:user.email,name:user.name,groupNames:user.groupNames,listNames:user.listNames,isAdmin:user.isAdmin,token:token}; 
                     }
                 }
@@ -162,13 +189,18 @@ const RootQuery = new GraphQLObjectType({
         getLists:{
             type: new GraphQLList(listType),
             resolve:async (parent,args,req)=>{
-                
-                return await List.find({users:req.email}) 
+                return await List.find({users:req.email})//,type:TypeOfList.Private}) 
                 //return await List.find({users:{$elemMatch:{userMail:req.email}}})           
             }
         },
+        getGroups:{
+            type: new GraphQLList(groupType),
+            resolve:async(parent,args,req)=>{
+                return await Group.find({users:req.email})
+            }
+        },
         
-        getUsersOfList:{
+        /*getUsersOfList:{
             type: new GraphQLList(userType),
             args:{
                 listId:{type:GraphQLString}
@@ -177,9 +209,9 @@ const RootQuery = new GraphQLObjectType({
                 const list = await List.findById(args.listId);
                 return await User.find({listNames:list.name});
             }
-        },
+        },*/
         
-        getAdminsOfList:{
+        /*getAdminsOfList:{
             type: new GraphQLList(userType),
             args:{
                 listId:{type:GraphQLString}
@@ -188,13 +220,20 @@ const RootQuery = new GraphQLObjectType({
                 const list = await List.findById(args.listId);
                 return await User.find({listNames:list.name}).admins;
             }
-        },
+        },*/
+
         getListsOfGroup:{
             type: new GraphQLList(listType),
             args:{
                 groupName:{type:GraphQLString}
             },
-            resolve:async(parent,args)=>{
+            resolve:async(parent,args,req)=>{
+                let logT = new Log({
+                    email: req.email,
+                    operation: `Get lists of group: ${groupName}`,
+                    time:Date.now()
+                })
+                logT.save()
                 return await List.find({name:args.groupName});
             }
         }
@@ -212,12 +251,26 @@ const Mutation = new GraphQLObjectType({
                 password:{type: new GraphQLNonNull(GraphQLString)},
                 //isAdmin:{type: GraphQLBoolean}
             },
-            resolve: async(parent,args)=>{
+            resolve: async(parent,args,req)=>{
                 const existingUser = await User.findOne({email: args.email});
                 if (existingUser){
+                    let logT = new Log({
+                        email: args.email,
+                        operation: `Fail, creating existing user`,
+                        time:Date.now()
+                    })
+                    logT.save()
                     throw new Error('User already exists');
+                    
                 }
                 else{
+                    let logT = new Log({
+                        email: args.email,
+                        operation: `User created`,
+                        time:Date.now()
+                    })
+                    logT.save()
+
                     const hashedPassword = await bcrypt.hash(args.password,16);
                     let user = new User({
                         name:args.name,
@@ -244,6 +297,12 @@ const Mutation = new GraphQLObjectType({
                     const hashedPassword = await bcrypt.hash(args.password,16);
                     user.updateOne({password:hashedPassword})
                 }
+                let logT = new Log({
+                    email: args.email,
+                    operation: `User info updated`,
+                    time:Date.now()
+                })
+                logT.save()
                 return await user;
                 
             }
@@ -253,19 +312,27 @@ const Mutation = new GraphQLObjectType({
             args:{
                 name:{type: GraphQLString},
                 type:{type: GraphQLString},
-                group:{type: GraphQLString}
+                group:{type: GraphQLString},
+                description:{type:GraphQLString}
             },
             resolve: async(parent,args,req)=>{
                 console.log(args.group)
                 const user = await User.findOne({email:req.email})
                 if(user!== null){
-                    if(args.group !== undefined){
+                    if(args.group){
                         const leadCheck = await Group.find({leadMail:req.email,name:args.group})
                         if(leadCheck.length !== 0){
+                            let logT = new Log({
+                                email: req.email,
+                                operation: `Created a list in ${args.group}`,
+                                time:Date.now()
+                            })
+                            logT.save()
                             const list = new List({
                                 name:args.name,
                                 type:args.type,
                                 group:args.group,
+                                description:args.description,
                                 users:req.email,
                                 admins:req.email
                             })
@@ -273,14 +340,27 @@ const Mutation = new GraphQLObjectType({
                             return await list.save()
                         }
                         else{
+                            let logT = new Log({
+                                email: req.email,
+                                operation: `Fail, unauthorized to create a list in ${args.group}`,
+                                time:Date.now()
+                            })
+                            logT.save()
                             throw new Error("Unauthorized");
                         }
                     }
                     else{
+                        let logT = new Log({
+                            email: req.email,
+                            operation: `Created private list`,
+                            time:Date.now()
+                        })
+                        logT.save()
                         const list = new List({
                             name:args.name,
                             users:req.email,
-                            admins:req.email
+                            admins:req.email,
+                            description:args.description
                         })
                         await user.updateOne({$addToSet:{listNames:args.name}})
                         return await list.save()
@@ -300,16 +380,58 @@ const Mutation = new GraphQLObjectType({
                 listID:{type:GraphQLString}
             },
             resolve: async(parent,args,req)=>{
-                const listM = List.findById(args.listID);
-              
-                let listE = new listItem({
-                    description:args.description,
-                    importancy:args.importancy,
-                    listID:args.listID
-                })
+                const listM = await List.findById(args.listID);
+                
+                console.log(listM.type);
+                if(listM.type === "GROUP"){
+                    let adminCheck = await Group.find({leadMail:req.email,name:listM.group})
+                    console.log(adminCheck)
+                    if(adminCheck.length!==0){
+                        let listE = new listItem({
+                            description:args.description,
+                            importancy:args.importancy,
+                            listID:args.listID
+                        })
+                            
+                        await listM.updateOne({$addToSet:{listItems: listE}})
+                        listE.save()
+        
+                        let logT = new Log({
+                            email: req.email,
+                            operation: `Added list item to ${listM.name}`,
+                            time:Date.now()
+                        })
+                        logT.save()
+        
+                        return await listE
+                    }
+                    else{
+                        throw new Error("Unauthorized")
+                    }
                     
-                await listM.updateOne({$addToSet:{listItems: listE}})
-                return listE.save()
+                }
+                else{
+                    let listE = new listItem({
+                        description:args.description,
+                        importancy:args.importancy,
+                        listID:args.listID
+                    })
+                        
+                    await listM.updateOne({$addToSet:{listItems: listE}})
+                    listE.save()
+    
+                    let logT = new Log({
+                        email: req.email,
+                        operation: `Added list item to ${listM.name}`,
+                        time:Date.now()
+                    })
+                    logT.save()
+    
+                    return await listE
+                }
+                
+
+                
             }
         },
         createGroup:{
@@ -327,17 +449,28 @@ const Mutation = new GraphQLObjectType({
                     users:req.email
                 })
                 await User.findByIdAndUpdate(req.userID,{$addToSet:{groupNames:args.name}})
-                return await group.save();
+                await group.save();
+
+                let logT = new Log({
+                    email: req.email,
+                    operation: `Created group: ${args.name}`,
+                    time:Date.now()
+                })
+                logT.save()
+
+                return await group
             }
         },
+        /*deleteGroup:{
+
+        },*/
         removeUser:{
             type:userType,
             args:{
                 email:{type:GraphQLString},
             },
             resolve: async(parent,args)=>{
-                await User.findOneAndRemove({email:args.email});
-
+                
                 const list = List.find({users:args.email})
                 await list.updateMany({$pull:{users:args.email}})
 
@@ -349,6 +482,8 @@ const Mutation = new GraphQLObjectType({
 
                 const group1 = Group.find({leadMail:args.email})
                 await group1.updateMany({leadMail:null})
+
+                return await User.findOneAndRemove({email:args.email});
             }
         },
         removeList:{
@@ -356,16 +491,25 @@ const Mutation = new GraphQLObjectType({
             args:{
                 listId:{type:GraphQLString}
             },
-            resolve: async(parent,args)=>{
-                const list = await List.findById(args.listId).lean();
+            resolve: async(parent,args,req)=>{
+                const list = await List.findById(args.listId);
                 
                 const user = User.find({listNames:list.name})
                 await user.updateMany({$pull:{listNames:list.name}})
 
                 const liindex = listItem.find({listID:args.listId})
-                await liindex.remove({listID:args.listId})
+                await liindex.deleteOne({listID:args.listId})
 
-                await list.remove({_id:args.listId})
+                await list.deleteOne({id:args.listId})
+
+                let logT = new Log({
+                    email: req.email,
+                    operation: `Removed the list:  ${list.name}`,
+                    time:Date.now()
+                })
+                logT.save()
+
+                return await list
             }
         },
         addUserToList:{
@@ -374,16 +518,37 @@ const Mutation = new GraphQLObjectType({
                 email:{type:new GraphQLNonNull(GraphQLString)},
                 listId:{type:new GraphQLNonNull(GraphQLString)}
             },
-            resolve: async(parent,args)=>{
-                const user = User.findOne({email:args.email});
-                const list = await List.findById(args.listId).lean();
-                console.log(list.name);
+            resolve: async(parent,args,req)=>{
+                let user = await User.findOne({email:args.email});
+                let list = await List.findById(args.listId);
+
+                const adminCheck = await List.find({admins:req.email,_id:args.listId});
+                
                 if(user !== null && list!==null) {
-                    await user.updateOne({$addToSet:{listNames:list.name}})
-                    await list.updateOne({$addToSet:{users:args.email}})
+                    if(adminCheck.length !== 0){
+                        await user.updateOne({$addToSet:{listNames:list.name}})
+                        await list.updateOne({$addToSet:{users:args.email}})
+
+                        let logT = new Log({
+                            email: req.email,
+                            operation: `Added user ${user.name} to list ${list.name} `,
+                            time:Date.now()
+                        })
+                        logT.save()
+                        return await user
+                    }
+                    else{
+                        let logT = new Log({
+                            email: req.email,
+                            operation: `Unauthorized to add user`,
+                            time:Date.now()
+                        })
+                        logT.save()
+                        throw new Error("Unauthorized")
+                    }
                 }
                 else{
-                    return new Error("enter user and list name")
+                    throw new Error("enter user and list name")
                 }
             } 
         },
@@ -394,13 +559,26 @@ const Mutation = new GraphQLObjectType({
                 groupId:{type:new GraphQLNonNull(GraphQLString)}
             },
             resolve: async(parent,args)=>{
-                const user = User.findOne({email:args.email});
-                const group = await Group.findById(args.groupId).lean();
-                if(user !== null && group!==null) {
-                    await user.updateOne({$addToSet:{groupNames:group.name}})
+                const user = await User.findOne({email:args.email});
+                const group = await Group.findById(args.groupId);
+                if(!user){
+                    return new Error("Enter a valid e-mail")
+                }
+                else if(!group){
+                    return new Error("Enter a valid group")
+                }
+                else if(!group && !user){
+                    return new Error("Enter a valid group and e-mail")
                 }
                 else{
-                    return new Error("enter valid user and group name")
+                    await user.updateOne({$push:{groupNames:group.name}})
+                    await group.updateOne({$push:{users:args.email}})
+                    const list = await List.find({group:group.name})
+                    
+                    const names = list.map(item=>item.name)
+                    user.updateOne({$push:{listNames:{$each:names}}})
+                    
+                    return user
                 }
             } 
         }

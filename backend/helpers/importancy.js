@@ -1,5 +1,5 @@
 module.exports = {
-    High: 'High',
-    Normal: 'Normal',
-    Low: 'Low'
+    High: 'HIGH',
+    Normal: 'NORMAL',
+    Low: 'LOW'
   }

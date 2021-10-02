@@ -1,4 +1,4 @@
 module.exports = {
-    Group: 'Group',
-    Private: 'Private'
+    Group: 'GROUP',
+    Private: 'PRIVATE'
   }
