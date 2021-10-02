@@ -14,7 +14,7 @@ const listSchema = new Schema({
         type:String
         //default: listType.Private
     },
-    listIndexes:[{type: Schema.Types.ObjectId, ref: 'ListIndex'}],
+    listItems:[{type: Schema.Types.ObjectId, ref: 'ListItem'}],
     users: [{
         type:String,
         required:true  

@@ -14,6 +14,20 @@ const loginTokenSchema = new Schema({
     token:{
         type:String,
         required:true,
+    },
+    name:{
+        type:String,
+        required:true
+    },
+    groupNames:[{
+        type:String
+    }],
+    listNames:[{
+        type:String
+    }],
+    isAdmin:{
+        type:Boolean,
+        default: false
     }
 })
 

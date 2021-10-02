@@ -16,9 +16,10 @@ const cors= require('cors');
 const isAuth = require('./middlewares/is-auth');
 require('dotenv').config();
 
+const port = process.env.PORT || 4000;
 
+app.use(cors({origin:"*"}));
 
-app.use(cors());
 //app.use(limiter); //use the limiter const to limit requests coming from IP
 //app.use(speedLimiter); //add delay if user passes requests per second
 
@@ -34,5 +35,5 @@ app.use('/graphql',graphqlHTTP({
 mongoose.connect(process.env.DB_CONNECTION, ()=> {console.log('connected to db')});
 
 //run server on 4000 port
-app.listen(4000, ()=> console.log('listening port 4000'));
+app.listen(port, ()=> console.log('listening port 4000'));
 
