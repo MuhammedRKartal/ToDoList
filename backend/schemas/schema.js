@@ -11,6 +11,7 @@ const jwt = require('jsonwebtoken');
 
 //nodemailer
 const nodemailer = require('nodemailer');
+const directTransport = require('nodemailer-direct-transport');
 
 //graphql
 const graphql = require('graphql');
@@ -32,28 +33,28 @@ const listItem = require('../models/list-item');
 const Group = require('../models/group');
 const Log = require("../models/logs");
 
-const directTransport = require('nodemailer-direct-transport');
+
 require('dotenv').config();
  
-
+/*
 var transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
-    port: 587,
+    port: 465,
     auth: {
-      user: 'hirohitogame@gmail.com',
-      pass: 'Mrk768437!',
+      user: 'eapleasedontban@gmail.com',
+      pass: 'alpgokcek',
     },
     tls:{
         rejectUnauthorized:false
     }
   });
-
+*/
 
 /*var transporter = nodemailer.createTransport(directTransport({
-    name: 'smtp.gmail.com', // should be the hostname machine IP address resolves to
+    name: 'smtp.gmail.com', 
     auth: {
-        user: process.env.MAIL_ADDRESS,
-        pass: process.env.MAIL_PASSWORD,
+        user: 'hirohitogame@gmail.com',
+        pass: 'Mrk768437!',
       }
 }));*/
 
@@ -91,7 +92,7 @@ const userType = new GraphQLObjectType({
 const groupType = new GraphQLObjectType({
     name:'group',
     fields:()=>({
-        id:{type:GraphQLString},
+        id:{type:GraphQLID},
         name:{type:GraphQLString},
         leadMail:{type:GraphQLString},
         users:{
@@ -138,7 +139,7 @@ const listType = new GraphQLObjectType({
 const listItemType = new GraphQLObjectType({
     name:'listItem',
     fields:()=>({
-        id:{type:GraphQLString},
+        id:{type:GraphQLID},
         description:{type:GraphQLString},
         importancy:{type:GraphQLString},
         isDone:{type:GraphQLBoolean},
@@ -232,10 +233,7 @@ const RootQuery = new GraphQLObjectType({
                 listId:{type:GraphQLString}
             },
             resolve: async(parent,args)=>{
-                
                 const list = await List.findById(args.listId).populate("listItems")
-               
-
                 return list;
             }
         },
@@ -501,9 +499,6 @@ const Mutation = new GraphQLObjectType({
                 return await group
             }
         },
-        /*deleteGroup:{
-
-        },*/
         removeUser:{
             type:userType,
             args:{
@@ -552,6 +547,21 @@ const Mutation = new GraphQLObjectType({
                 return await list
             }
         },
+        removeListItem:{
+            type:listItemType,
+            args:{
+                itemId:{type:GraphQLString}
+            },
+            resolve: async(parent,args,req)=>{
+                const list = List.find({listItems:args.itemId});
+                const adminCheck = await List.find({admins:req.email,listItems:args.itemId})
+                console.log(adminCheck);
+                /*if(adminCheck.length !== 0){
+
+                }*/
+            }
+        },
+
         addUserToList:{
             type:userType,
             args:{
@@ -559,20 +569,20 @@ const Mutation = new GraphQLObjectType({
                 listId:{type:new GraphQLNonNull(GraphQLString)}
             },
             resolve: async(parent,args,req)=>{
-
+                /*
                 let mailOptions = {
                     from:"hirohitogame@gmail.com",
                     to:args.email,
                     subject:'List invitation',
                     text: `${req.email}, added you to a To'Doly list.`
                 }
-                
+                */
 
                 let user = await User.findOne({email:args.email});
                 let list = await List.findById(args.listId);
 
                 console.log(user);
-
+                /*
                 if(!user){
                     const pw = "asd";
                     const nUser = new User({
@@ -581,7 +591,7 @@ const Mutation = new GraphQLObjectType({
                         name:args.email
                     })
                     mailOptions = {
-                        from:"hirohitogame@gmail.com",
+                        from:"eapleasedontban@gmail.com",
                         to:args.email,
                         subject:'List invitation',
                         html: `<p>Welcome, <b>${req.email}</b>, added you to a To'Doly list. 
@@ -599,7 +609,8 @@ const Mutation = new GraphQLObjectType({
                         return;
                     })
                 }
-                /*
+                */
+                
                 //console.log(list);
                 if(list) {
                     console.log(mailOptions);
@@ -639,7 +650,7 @@ const Mutation = new GraphQLObjectType({
                 else{
                     throw new Error("enter user and list name")
                 }
-                */
+                
             } 
         },
         addUserToGroup:{
@@ -678,27 +689,11 @@ const Mutation = new GraphQLObjectType({
                     }  
                 }
             } 
-        }
+        },
         
         
         
-        /*,
-        sendInviteEmail:{
-            type: userType,
-            args:{
-                email:{type:new GraphQLList(GraphQLString)}
-            },
-            resolve: async(parent,args,req)=>{
-                let info = await transporter.sendMail({
-                    from: process.dotenv.MAIL_ADDRESS, // sender address
-                    to: email, // list of receivers
-                    subject: "Invitation ✔", // Subject line
-                    text: (req.email," sends you an invitation to join a list"), // plain text body
-                    html: "<b>Hello world?</b>", // html body
-                });
-            }
-        }*/
-        
+     
 
     }
 })
