@@ -1,8 +1,12 @@
 import React from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 
+
+
 function ListDelete(props) {
+
     const {open, handleDeleteClose, name, onListDeleteClick} = props;
+    
     return (
         <Dialog
             open={open}

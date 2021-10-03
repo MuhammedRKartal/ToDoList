@@ -24,7 +24,11 @@ query{
         }
         users{
             name
+            email
         } 
+        admins{
+            email
+        }
     }
 }
 `

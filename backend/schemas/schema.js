@@ -131,9 +131,11 @@ const listType = new GraphQLObjectType({
         //getting admins of list
         admins:{
             type: new GraphQLList(userType),
-            resolve(parent,args){
-                const user = User.find({listNames:parent.name})
-                return user.admins
+            resolve: async(parent,args)=>{
+                const list = await List.findById(parent.id)
+                console.log(list.admins);
+                const users = await User.find({email:list.admins})
+                return users
             }
         }
     })
@@ -192,7 +194,7 @@ const RootQuery = new GraphQLObjectType({
                 const user = await User.findOne({email:args.email});
                 //if there isn't any user with given email return error
                 if(!user){
-                    throw new Error('User not Found');
+                    return new Error('User not Found');
                 }
                 else{
                     const isEqual = await bcrypt.compare(args.password, user.password); //hashing the password to store in database (security)

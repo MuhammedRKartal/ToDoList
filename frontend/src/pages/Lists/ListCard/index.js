@@ -1,8 +1,9 @@
-import React, {useState} from 'react'
+import React, {useState, useContext} from 'react'
 import { Card, CardActions, CardContent, Button, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Avatar } from '@mui/material';
 import ListDelete from './Delete';
 import ListShare from './Share';
 import { useHistory } from 'react-router-dom';
+import {UserContext} from '../../../contexts'
 
 import './list-card.scss';
 
@@ -11,6 +12,10 @@ function ListCard(props) {
     const [openDelete, setOpenDelete] = useState(false);
     const [openShare, setOpenShare] = useState(false);
     const history = useHistory();
+
+    const { user, setUser } = useContext(UserContext);
+    console.log(item);
+    //const isUserLead = (item.leadMail === user.user.email)
    
     const onListDeleteClick = () => {
         onListDelete(item.id);

@@ -8,15 +8,17 @@ import { useHistory } from 'react-router-dom'
 import './login.scss'
 
 function Login() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [handleLogin, { data, error }] = useLazyQuery(LOGIN_QUERY);
-    const history = useHistory();
-    const { user, setUser } = useContext(UserContext);
+    const [email, setEmail] = useState(''); //email state
+    const [password, setPassword] = useState(''); //password state
+    const [handleLogin, { data, error }] = useLazyQuery(LOGIN_QUERY); //call login query as lazyquery to be able to call it multiple times
+    const history = useHistory(); //history on changing pages
+    const { user, setUser } = useContext(UserContext); //get user
+
 
     useEffect(() => {
         if(data){
-            localStorage.setItem('token', data.login.token);
+            console.log("a");
+            localStorage.setItem('token', data.login?.token || "login");
             localStorage.setItem('user', JSON.stringify(data.login));
             setUser({isAuthenticated: true, user: {...data.login}});
         }

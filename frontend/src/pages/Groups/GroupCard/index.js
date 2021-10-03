@@ -1,12 +1,17 @@
-import React, {useState} from 'react'
+import React, {useState,useContext} from 'react'
 import { Card, CardActions, CardContent, Button, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Avatar } from '@mui/material';
 import GroupShare from './Share';
+import { UserContext } from '../../../contexts';
 
 import './group-card.scss';
 
 function GroupCard(props) {
     const {item, refetch} = props; //getting item and refetch properties from props
     const [openShare, setOpenShare] = useState(false); //initializing openShare state for modal
+    const { user, setUser } = useContext(UserContext);
+
+    const isUserLead = (item.leadMail === user.user.email)
+    
    
     //to give a color to circle (on each group card)
     const stringToColor = (string) => {
@@ -69,10 +74,11 @@ function GroupCard(props) {
                     
                 </CardContent>
                 <CardActions>
-                    <div className="group-card__buttons">
-                        <Button size="small" onClick={()=> setOpenShare(true)}>Share</Button>
-                        
-                    </div>
+                    { isUserLead &&
+                      <div className="group-card__buttons">
+                        <Button size="small" onClick={()=> setOpenShare(true)}>Share</Button> 
+                      </div>
+                    }
                 </CardActions>
             </Card>
 
