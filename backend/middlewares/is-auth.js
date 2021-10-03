@@ -12,12 +12,13 @@ const checkPublicPath =(path, token)=>{
 module.exports = (req,res,next)=>{
     const authHeader = req.get('Authorization') || req.get('authorization');
 
+    //if request url is login or register don't ask for authorization
     if(checkPublicPath(req.originalUrl, authHeader)){
         return next()
     }
 
+    //if there isn't authheader return error
     if(!authHeader){
-       
         req.isAuth = false;
         res.json({
             message:'Unauthenticated',
@@ -25,9 +26,12 @@ module.exports = (req,res,next)=>{
         res.status(401);
         return res;
     }
+
+    //if there is, it will be like Bearer *****, we will get the ***** part
     const token = authHeader.split(' ')[1];
+
+    //If there isn't a token return error
     if(!token || token === ''){
-        
         req.isAuth = false;
         res.json({
             message:'Unauthenticated',
@@ -35,13 +39,13 @@ module.exports = (req,res,next)=>{
         res.status(401);
         return res ;
     }
+
+    //verify the token
     let decodedToken;
     try{
-        
         decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET)
     }
     catch(err){
-        
         req.isAuth = false;
         res.json({
             message:'Unauthenticated',
@@ -50,7 +54,6 @@ module.exports = (req,res,next)=>{
         return res;
     }
     if (!decodedToken){
-        
         req.isAuth = false;
         res.json({
             message:'Unauthenticated',
@@ -58,6 +61,8 @@ module.exports = (req,res,next)=>{
         res.status(401);
         return res;
     }
+
+    //give variables to the request object
     req.isAuth = true;
     req.email = decodedToken.email;
     req.userID = decodedToken.userID;

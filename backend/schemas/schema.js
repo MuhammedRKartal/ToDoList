@@ -3,8 +3,6 @@ const TypeOfList = require('../helpers/list-type')
 const Role = require('../helpers/role');
 const Importancy = require('../helpers/importancy')
 
-const userAuthorityList = require('../helpers/list-user-authority')
-
 //authentication
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -36,6 +34,8 @@ const Log = require("../models/logs");
 
 require('dotenv').config();
  
+//will work on the sending mail, it gave an error, couldn't send it
+
 /*
 var transporter = nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -231,6 +231,7 @@ const RootQuery = new GraphQLObjectType({
         },
 
         //get all the lists of current user
+        //the commented part is to return only private lists
         getLists:{
             type: new GraphQLList(listType),
             resolve:async (parent,args,req)=>{
@@ -246,6 +247,7 @@ const RootQuery = new GraphQLObjectType({
                 return await Group.find({users:req.email})
             }
         },
+
         //get list by given id
         getList:{
             type: listType,
@@ -257,6 +259,7 @@ const RootQuery = new GraphQLObjectType({
                 return list;
             }
         },
+
         //get lists of given group
         getListsOfGroup:{
             type: new GraphQLList(listType),
@@ -274,6 +277,7 @@ const RootQuery = new GraphQLObjectType({
             }
         },
 
+        //get the groups that user is admin, to use in dropdown list
         getGroupsThatUserIsAdmin:{
             type:new GraphQLList(groupType),
             resolve:async(parent,args,req)=>{
@@ -328,6 +332,7 @@ const Mutation = new GraphQLObjectType({
                 }
             }
         },
+        //not using it rn
         updateUserInfo:{
             type:userType,
             args:{
@@ -353,6 +358,7 @@ const Mutation = new GraphQLObjectType({
                 
             }
         },
+        //create a list
         createList:{
             type:listType,
             args:{
@@ -362,11 +368,13 @@ const Mutation = new GraphQLObjectType({
                 description:{type:GraphQLString}
             },
             resolve: async(parent,args,req)=>{
-                
                 const user = await User.findOne({email:req.email})
+                //if there is a user
                 if(user!== null){
+                    //if list type is group
                     if(args.type === "GROUP"){
                         const leadCheck = await Group.find({leadMail:req.email,name:args.group})
+                        //if requester is lead of the group
                         if(leadCheck.length !== 0){
                             let logT = new Log({
                                 email: req.email,
@@ -375,6 +383,7 @@ const Mutation = new GraphQLObjectType({
                             })
                             logT.save()
                             
+                            //create the list object
                             const group = await Group.findOne({name:args.group})
                             const list = new List({
                                 name:args.name,
@@ -384,10 +393,14 @@ const Mutation = new GraphQLObjectType({
                                 users:group.users,
                                 admins:req.email
                             })
-
+                            /*
+                                Update the lists of users that are belonging to the given group 
+                                and update the list table
+                            */
                             await User.updateMany({email:group.users},{$addToSet:{listNames:args.name}})
                             return await list.save()
                         }
+                        //if requester is not lead fail
                         else{
                             let logT = new Log({
                                 email: req.email,
@@ -395,9 +408,10 @@ const Mutation = new GraphQLObjectType({
                                 time:Date.now()
                             })
                             logT.save()
-                            throw new Error("Unauthorized");
+                            throw new Error("Unauthorized, you aren't the admin of that group");
                         }
                     }
+                    //if list is private directly update without any control
                     else{
                         let logT = new Log({
                             email: req.email,
@@ -421,6 +435,8 @@ const Mutation = new GraphQLObjectType({
                 
             }
         },
+
+        //add item to list with group leader control
         addListItem:{
             type:listItemType,
             args:{
@@ -430,8 +446,6 @@ const Mutation = new GraphQLObjectType({
             },
             resolve: async(parent,args,req)=>{
                 const listM = await List.findById(args.listID);
-                
-                
                 if(listM.type === "GROUP"){
                     let adminCheck = await Group.find({leadMail:req.email,name:listM.group})
                     
@@ -483,15 +497,17 @@ const Mutation = new GraphQLObjectType({
                 
             }
         },
+        /*
+            create a group
+            Update the user's groups
+            save the group
+        */
         createGroup:{
             type:groupType,
             args:{
                 name:{type:GraphQLString}
             },
             resolve: async (parent,args,req)=>{
-                if(req.isAdmin === false){
-                    console.log('This is user')
-                }
                 const group = new Group({
                     name:args.name,
                     leadMail:req.email,
@@ -510,6 +526,7 @@ const Mutation = new GraphQLObjectType({
                 return await group
             }
         },
+        //not using it rn
         removeUser:{
             type:userType,
             args:{
@@ -532,6 +549,14 @@ const Mutation = new GraphQLObjectType({
                 return await User.findOneAndRemove({email:args.email});
             }
         },
+        /*
+            Delete a list
+            if isn't group lead can't remove a group list
+            if the list is private can
+            updates all user's lists
+            removes list indexes of that list
+            removes the list
+        */
         removeList:{
             type:userType,
             args:{
@@ -584,6 +609,11 @@ const Mutation = new GraphQLObjectType({
                 }   
             }
         },
+        /*
+            remove a list item
+            from list, and the item directly
+            can only do it if admin of the list.
+        */
         removeListItem:{
             type:listItemType,
             args:{
@@ -611,11 +641,13 @@ const Mutation = new GraphQLObjectType({
         },
 
 
-        //adding user to a given list
-        //if user already in list throw error
-        //if the current user is not admin give unauthorized error
-        //if email or list Id is invalid return error
-        //updates users
+        /*
+            adding user to a given list
+            if user already in list throw error
+            if the current user is not admin give unauthorized error
+            if email or list Id is invalid return error
+            updates user
+        */
         addUserToList:{
             type:userType,
             args:{
@@ -669,11 +701,17 @@ const Mutation = new GraphQLObjectType({
                     //console.log(mailOptions);      
                     
                     const adminCheck = await List.find({admins:req.email,_id:args.listId});
+                    //check for admin
                     if(adminCheck.length !== 0){ 
                         const isInList = await List.find({users:user.email, _id:args.listId})
 
+                        //check for already in list
                         if(isInList.length !==0){
                             return new Error("User is already in the list")
+                        }
+                        //if list is private also add user as an admin
+                        if(list.type === TypeOfList.Private){
+                            await list.updateOne({$addToSet:{admins:args.email}})
                         }
 
                         await user.updateOne({$addToSet:{listNames:list.name}})
@@ -760,7 +798,9 @@ const Mutation = new GraphQLObjectType({
                 }
             } 
         },
+
         //change the value of isDone like true or false
+        //gonna be used in checkbox
         changeListItemDone:{
             type:listItemType,
             args:{
