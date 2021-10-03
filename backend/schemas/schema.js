@@ -702,12 +702,12 @@ const Mutation = new GraphQLObjectType({
             type:listItemType,
             args:{
                 itemId:{type:GraphQLString},
-                in: {type:GraphQLString}
+                value: {type:GraphQLBoolean}
             },
             resolve: async(parent,args,req)=>{
                 const adminCheck = await List.find({admins:req.email,listItems:args.itemId})
                 if(adminCheck.length !== 0){
-                    return await listItem.findByIdAndUpdate(args.itemId,{isDone:args.in})
+                    return await listItem.findByIdAndUpdate(args.itemId,{isDone:args.value})
                 }
                 else{
                     throw new Error("Unauthorized")
