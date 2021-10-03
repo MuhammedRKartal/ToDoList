@@ -190,25 +190,29 @@ const RootQuery = new GraphQLObjectType({
             },
             resolve: async(parent,args)=>{
                 const user = await User.findOne({email:args.email});
+                //if there isn't any user with given email return error
                 if(!user){
                     throw new Error('User not Found');
                 }
                 else{
                     const isEqual = await bcrypt.compare(args.password, user.password); //hashing the password to store in database (security)
                     if(!isEqual){
+                        //logging the operation
                         let logT = new Log({
                             email: args.email,
                             operation: "Entered Wrong Password",
                             time:Date.now()
                         })
                         logT.save()
+
                         throw new Error('Wrong password');
                         
                     }
                     else{
-                        //create a token to sign in it expires in 30 mins
+                        //create a token to sign in it expires in 10 hours(10 hours is for development)
                         const token = jwt.sign({userID:user.id, email:user.email,name:user.name,groupNames:user.groupNames,listNames:user.listNames,isAdmin:user.isAdmin}, process.env.ACCESS_TOKEN_SECRET, {expiresIn:'10h'}); 
-                        //return the user.id, email and the token
+                        
+                        //log
                         let logT = new Log({
                             email: user.email,
                             operation: "login",
@@ -216,24 +220,30 @@ const RootQuery = new GraphQLObjectType({
                         })
                         logT.save()
 
+                        //return necessary things
                         return {userID:user.id, email:user.email,name:user.name,groupNames:user.groupNames,listNames:user.listNames,isAdmin:user.isAdmin,token:token}; 
                     }
                 }
             }
         },
+
+        //get all the lists of current user
         getLists:{
             type: new GraphQLList(listType),
             resolve:async (parent,args,req)=>{
                 return await List.find({users:req.email})//,type:TypeOfList.Private}) 
-                //return await List.find({users:{$elemMatch:{userMail:req.email}}})           
+                       
             }
         },
+
+        //get all the groups that current user is attending
         getGroups:{
             type: new GraphQLList(groupType),
             resolve:async(parent,args,req)=>{
                 return await Group.find({users:req.email})
             }
         },
+        //get list by given id
         getList:{
             type: listType,
             args:{
@@ -244,29 +254,7 @@ const RootQuery = new GraphQLObjectType({
                 return list;
             }
         },
-        
-        /*getUsersOfList:{
-            type: new GraphQLList(userType),
-            args:{
-                listId:{type:GraphQLString}
-            },
-            resolve:async(parent,args)=>{
-                const list = await List.findById(args.listId);
-                return await User.find({listNames:list.name});
-            }
-        },*/
-        
-        /*getAdminsOfList:{
-            type: new GraphQLList(userType),
-            args:{
-                listId:{type:GraphQLString}
-            },
-            resolve:async(parent,args)=>{
-                const list = await List.findById(args.listId);
-                return await User.find({listNames:list.name}).admins;
-            }
-        },*/
-
+        //get lists of given group
         getListsOfGroup:{
             type: new GraphQLList(listType),
             args:{
@@ -285,16 +273,17 @@ const RootQuery = new GraphQLObjectType({
     }
 })
 
+//mutations for database post
 const Mutation = new GraphQLObjectType({
     name: 'MutationType',
     fields:{
+        //register by name email and password
         register:{
             type:userType,
             args:{
                 name:{type:new GraphQLNonNull(GraphQLString)},
                 email:{type: new GraphQLNonNull(GraphQLString)},
                 password:{type: new GraphQLNonNull(GraphQLString)},
-                //isAdmin:{type: GraphQLBoolean}
             },
             resolve: async(parent,args,req)=>{
                 const existingUser = await User.findOne({email: args.email});
@@ -564,6 +553,14 @@ const Mutation = new GraphQLObjectType({
                 if(adminCheck.length !== 0){
                     const list = List.find({listItems:args.itemId});
                     await list.updateOne({$pull:{listItems:args.itemId}})
+                    
+                    let logT = new Log({
+                        email: user.email,
+                        operation: `${req.email}, removed the list item ${args.itemId}`,
+                        time:Date.now()
+                    })
+                    logT.save()
+
                     return await listItem.findByIdAndDelete(args.itemId)
                    
                 }
@@ -626,13 +623,6 @@ const Mutation = new GraphQLObjectType({
                 if(list) {
                     console.log(mailOptions);
                     user = await User.findOne({email:args.email});
-                    await transporter.sendMail(mailOptions).then(res=>{
-                        console.log("email sent")
-                        return;
-                    }).catch(err=>{
-                        console.error("a")
-                        return;
-                    })
                     
                     const adminCheck = await List.find({admins:req.email,_id:args.listId});
                     if(adminCheck.length !== 0){
@@ -692,7 +682,14 @@ const Mutation = new GraphQLObjectType({
                         
                         const names = list.map(item=>item.name)
                         user.updateOne({$push:{listNames:{$each:names}}})
-                    
+                        
+                        let logT = new Log({
+                            email: user.email,
+                            operation: `${req.email}, added ${args.email} to group ${group.name}`,
+                            time:Date.now()
+                        })
+                        logT.save()
+
                         return user
                     }
                     else{
@@ -704,13 +701,13 @@ const Mutation = new GraphQLObjectType({
         changeListItemDone:{
             type:listItemType,
             args:{
-                itemId:{type:GraphQLString}
+                itemId:{type:GraphQLString},
+                in: {type:GraphQLString}
             },
             resolve: async(parent,args,req)=>{
                 const adminCheck = await List.find({admins:req.email,listItems:args.itemId})
                 if(adminCheck.length !== 0){
-                    return await listItem.findByIdAndUpdate(args.itemId,{isDone:true})
-                    //return await listItem.findByIdAndDelete(args.itemId)
+                    return await listItem.findByIdAndUpdate(args.itemId,{isDone:args.in})
                 }
                 else{
                     throw new Error("Unauthorized")
