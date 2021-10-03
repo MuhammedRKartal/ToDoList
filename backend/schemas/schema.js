@@ -160,6 +160,7 @@ const loginTokenType = new GraphQLObjectType({
     })
 })
 
+
 const logType = new GraphQLObjectType({
     name:"Log",
     field:()=>({
@@ -224,6 +225,19 @@ const RootQuery = new GraphQLObjectType({
             type: new GraphQLList(groupType),
             resolve:async(parent,args,req)=>{
                 return await Group.find({users:req.email})
+            }
+        },
+        getList:{
+            type: listType,
+            args:{
+                listId:{type:GraphQLString}
+            },
+            resolve: async(parent,args)=>{
+                
+                const list = await List.findById(args.listId).populate("listItems")
+               
+
+                return list;
             }
         },
         
@@ -343,7 +357,7 @@ const Mutation = new GraphQLObjectType({
                 description:{type:GraphQLString}
             },
             resolve: async(parent,args,req)=>{
-                console.log(args.group)
+                
                 const user = await User.findOne({email:req.email})
                 if(user!== null){
                     if(args.group){
@@ -409,7 +423,7 @@ const Mutation = new GraphQLObjectType({
             resolve: async(parent,args,req)=>{
                 const listM = await List.findById(args.listID);
                 
-                console.log(listM.type);
+                
                 if(listM.type === "GROUP"){
                     let adminCheck = await Group.find({leadMail:req.email,name:listM.group})
                     console.log(adminCheck)
