@@ -32,6 +32,33 @@ const listItem = require('../models/list-item');
 const Group = require('../models/group');
 const Log = require("../models/logs");
 
+const directTransport = require('nodemailer-direct-transport');
+ 
+
+/*let transporter = nodemailer.createTransport({
+    port: 465,
+    secure: false,
+    secureConnection: false,
+    service:"Gmail",
+    auth: {
+      user: process.env.MAIL_ADDRESS,
+      pass: process.env.MAIL_PASSWORD,
+    },
+    tls:{
+        rejectUnauthorized:false
+    }
+  });*/
+
+  var transporter = nodemailer.createTransport(directTransport({
+    name: 'smtp.gmail.com', // should be the hostname machine IP address resolves to
+    from: process.env.MAIL_ADDRESS,
+    auth: {
+        user: process.env.MAIL_ADDRESS,
+        pass: process.env.MAIL_PASSWORD,
+      }
+}));
+
+
 
 
 
@@ -519,13 +546,54 @@ const Mutation = new GraphQLObjectType({
                 listId:{type:new GraphQLNonNull(GraphQLString)}
             },
             resolve: async(parent,args,req)=>{
+
+                let mailOptions = {
+                    from:"hirohitogame@gmail.com",
+                    to:args.email,
+                    subject:'List invitation',
+                    text: `${req.email}, added you to a To'Doly list.`
+                }
+                
+
                 let user = await User.findOne({email:args.email});
                 let list = await List.findById(args.listId);
 
-                const adminCheck = await List.find({admins:req.email,_id:args.listId});
+                //console.log(user);
+
+                if(!user){
+                    const pw = "asd";
+                    const nUser = new User({
+                        email:args.email,
+                        password:pw,
+                        name:args.email
+                    })
+                    mailOptions = {
+                        from:"hirohitogame@gmail.com",
+                        to:args.email,
+                        subject:'List invitation',
+                        html: `<p>Welcome, <b>${req.email}</b>, added you to a To'Doly list. 
+                        <br/> You can complete your registration by clicking the link below. 
+                        <br/> if you don't want to register you can delete your account by clicking delete my account button.</p>
+                        <br/><br/> <a>Complete your registeration</a> <br/><a>Delete your account</a>`
+                    }
+                    nUser.save()
+                }
                 
-                if(user !== null && list!==null) {
+                //console.log(list);
+                if(list) {
+                    console.log(mailOptions);
+                    user = await User.findOne({email:args.email});
+                    await transporter.sendMail(mailOptions).then(res=>{
+                        console.log("email sent")
+                        return;
+                    }).catch(err=>{
+                        console.error("a")
+                        return;
+                    })
+
+                    const adminCheck = await List.find({admins:req.email,_id:args.listId});
                     if(adminCheck.length !== 0){
+                        
                         await user.updateOne({$addToSet:{listNames:list.name}})
                         await list.updateOne({$addToSet:{users:args.email}})
 
@@ -550,6 +618,7 @@ const Mutation = new GraphQLObjectType({
                 else{
                     throw new Error("enter user and list name")
                 }
+                
             } 
         },
         addUserToGroup:{
@@ -558,27 +627,34 @@ const Mutation = new GraphQLObjectType({
                 email:{type:new GraphQLNonNull(GraphQLString)},
                 groupId:{type:new GraphQLNonNull(GraphQLString)}
             },
-            resolve: async(parent,args)=>{
+            resolve: async(parent,args,req)=>{
                 const user = await User.findOne({email:args.email});
                 const group = await Group.findById(args.groupId);
                 if(!user){
-                    return new Error("Enter a valid e-mail")
+                    throw new Error("Enter a valid e-mail")
                 }
                 else if(!group){
-                    return new Error("Enter a valid group")
+                    throw new Error("Enter a valid group")
                 }
                 else if(!group && !user){
-                    return new Error("Enter a valid group and e-mail")
+                    throw new Error("Enter a valid group and e-mail")
                 }
                 else{
-                    await user.updateOne({$push:{groupNames:group.name}})
-                    await group.updateOne({$push:{users:args.email}})
-                    const list = await List.find({group:group.name})
+                    const adminCheck = await Group.find({leadMail:req.email,name:group.name})
+
+                    if(adminCheck.length !== 0){
+                        await user.updateOne({$addToSet:{groupNames:group.name}})
+                        await group.updateOne({$addToSet:{users:args.email}})
+                        const list = await List.find({group:group.name})
+                        
+                        const names = list.map(item=>item.name)
+                        user.updateOne({$push:{listNames:{$each:names}}})
                     
-                    const names = list.map(item=>item.name)
-                    user.updateOne({$push:{listNames:{$each:names}}})
-                    
-                    return user
+                        return user
+                    }
+                    else{
+                        return new Error("Unauthorized");
+                    }  
                 }
             } 
         }
