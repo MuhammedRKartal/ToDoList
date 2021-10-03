@@ -11,7 +11,7 @@ const jwt = require('jsonwebtoken');
 
 //nodemailer
 const nodemailer = require('nodemailer');
-const directTransport = require('nodemailer-direct-transport');
+//const directTransport = require('nodemailer-direct-transport');
 
 //graphql
 const graphql = require('graphql');
@@ -104,7 +104,7 @@ const groupType = new GraphQLObjectType({
     })
 })
 
-//populate
+//creates a list type
 const listType = new GraphQLObjectType({
     name:'list',
     fields:()=>({
@@ -113,6 +113,7 @@ const listType = new GraphQLObjectType({
         type:{type:GraphQLString},
         group:{type:GraphQLString},
         description:{type:GraphQLString},
+        //getting all items of list
         listItems:{
             type: new GraphQLList(listItemType),
             resolve(parent,args){
@@ -120,12 +121,14 @@ const listType = new GraphQLObjectType({
                 return listItem.find({listID:parent._id});//.populate().listName;
             }
         },
+        //getting users of list
         users:{
             type: new GraphQLList(userType),
             resolve(parent,args){
                 return User.find({listNames:parent.name})
             }
         },
+        //getting admins of list
         admins:{
             type: new GraphQLList(userType),
             resolve(parent,args){
@@ -136,6 +139,7 @@ const listType = new GraphQLObjectType({
     })
 })
 
+//listItem
 const listItemType = new GraphQLObjectType({
     name:'listItem',
     fields:()=>({
@@ -147,6 +151,7 @@ const listItemType = new GraphQLObjectType({
     })
 })
 
+//logintoken
 const loginTokenType = new GraphQLObjectType({
     name:'Token',
     fields:()=>({
@@ -160,7 +165,7 @@ const loginTokenType = new GraphQLObjectType({
     })
 })
 
-
+//logtype
 const logType = new GraphQLObjectType({
     name:"Log",
     field:()=>({
@@ -171,12 +176,14 @@ const logType = new GraphQLObjectType({
 })
 
 
-
+//queries
 const RootQuery = new GraphQLObjectType({
     name: 'RootQueryType',
     fields:{
+        //login query returns a loginToken
         login:{
             type: loginTokenType,
+            //takes email and password
             args:{
                 email:{type:GraphQLString},
                 password:{type:GraphQLString}
@@ -693,6 +700,23 @@ const Mutation = new GraphQLObjectType({
                     }  
                 }
             } 
+        },
+        changeListItemDone:{
+            type:listItemType,
+            args:{
+                itemId:{type:GraphQLString}
+            },
+            resolve: async(parent,args,req)=>{
+                const adminCheck = await List.find({admins:req.email,listItems:args.itemId})
+                if(adminCheck.length !== 0){
+                    return await listItem.findByIdAndUpdate(args.itemId,{isDone:true})
+                    //return await listItem.findByIdAndDelete(args.itemId)
+                }
+                else{
+                    throw new Error("Unauthorized")
+                }
+            }
+
         },
         
         
