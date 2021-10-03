@@ -33,27 +33,6 @@ query{
 }
 `
 
-/*
-export const getUsersOfListQuery=gql`
-query($listId:String!){
-    getUsersOfList(listId:$listId){
-        name
-        email
-    }
-}
-`
-
-/*
-export const getAdminsOfListQuery=gql`
-query($listId:String!){
-    getAdminsOfList(listId:$listId){
-        name
-        email
-    }
-}
-`
-*/
-
 export const GET_LISTS_OF_GROUPS = gql`
 query($groupName:String!){
     getListsOfGroup(groupName:$groupName){
@@ -93,6 +72,23 @@ export const GET_LIST_QUERY = gql`
             users{
                 name
             } 
+            admins{
+                email
+            }
+        }
+    }
+`
+
+export const GET_GROUPS_THAT_USER_IS_ADMIN_QUERY = gql`
+    query{
+        getGroupsThatUserIsAdmin{
+            id
+            name
+            leadMail
+            users{
+                name
+                email
+            }
         }
     }
 `

@@ -17,7 +17,6 @@ function Login() {
 
     useEffect(() => {
         if(data){
-            console.log("a");
             localStorage.setItem('token', data.login?.token || "login");
             localStorage.setItem('user', JSON.stringify(data.login));
             setUser({isAuthenticated: true, user: {...data.login}});
@@ -31,7 +30,6 @@ function Login() {
     }, [error])
 
     const onLogin = e => {
-        console.log('login triggered')
         handleLogin({
             variables: {
                 email,

@@ -37,11 +37,11 @@ function ListItemCreate(props) {
 
     useEffect(() => {
         if(data){
-            toast.success(`List item "${state.description}" is successfully created.`)
             refetch()
             setModalOpen(false)
         }
     }, [data])
+
 
     const handleChange = e => {
         setState({...state, [e.target.name]: e.target.value});

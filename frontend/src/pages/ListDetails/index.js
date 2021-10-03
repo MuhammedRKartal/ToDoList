@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react'
+import React, {useState, useEffect, useContext} from 'react'
 import { useParams } from 'react-router-dom';
 import { GET_LIST_QUERY } from '../../gql/queries';
 import { useQuery } from '@apollo/client';
@@ -6,6 +6,8 @@ import { Grid, Typography, List, Button } from "@mui/material";
 import { withStyles } from "@mui/styles";
 import { DragDropContext, Droppable } from "react-beautiful-dnd";
 import ListItemCreate from './Create';
+
+import { UserContext } from '../../contexts';
 
 import Item from "./Item";
 import './list-details.scss';
@@ -27,6 +29,7 @@ function ListDetails(props) {
     const [list, setList] = useState({ ...defaultList });
     const [isDragging, setIsDragging] = useState(false);
     const [modalOpen, setModalOpen] = React.useState(false);
+    const { user, setUser } = useContext(UserContext);
 
     const {data, loading, error, refetch} = useQuery(GET_LIST_QUERY,{
         variables: {
@@ -35,14 +38,12 @@ function ListDetails(props) {
       });
     useEffect(() => {
         if(data) setList(data.getList);
-        console.log(data)
+        
     }, [data])
     useEffect(() => {
         if(loading) setList({ ...defaultList });
     }, [loading])
-
-    //
-        
+  
       const onDragEnd = ({ source, destination }) => {
         if (destination === undefined || destination === null) return null;
         if (
@@ -60,12 +61,14 @@ function ListDetails(props) {
   
         // Update the state
         setList({ ...list, listItems: newList });
-        console.log({ ...list, listItems: newList })
+        
         setIsDragging(false);
         return null;
       };
+      
+      const isListAdmin = data?.getList?.admins.map(item=>item.email).includes(user.user.email)
 
-    //
+
     return (
         <div>
             {
@@ -75,7 +78,9 @@ function ListDetails(props) {
                             <Grid item className={classes.root}>
                             <div className="list-details__header">
                                 <Typography variant={"h4"}>List: <b>{list.name}</b></Typography>
-                                <Button color="secondary" variant="outlined" onClick={e=>setModalOpen(true)}>Create new List Item</Button>
+                                {isListAdmin &&
+                                  <Button color="secondary" variant="outlined" onClick={e=>setModalOpen(true)}>Create new List Item</Button>
+                                }
                             </div>
                             
 

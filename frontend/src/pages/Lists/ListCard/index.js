@@ -14,8 +14,11 @@ function ListCard(props) {
     const history = useHistory();
 
     const { user, setUser } = useContext(UserContext);
-    console.log(item);
-    //const isUserLead = (item.leadMail === user.user.email)
+    const isUserLead = item.admins.map(item=>item.email).includes((user.user.email));
+    
+    //item.admins.map(item=>item.email).includes((user.user.email));
+    
+    
    
     const onListDeleteClick = () => {
         onListDelete(item.id);
@@ -59,7 +62,7 @@ function ListCard(props) {
                     {item.name}
                     </Typography>
                     <Typography variant="body2">
-                    {item.description || 'here goes the description'}
+                    {item.description || ''}
                     <br />
                     </Typography>
                     <Typography variant="body2">
@@ -73,9 +76,13 @@ function ListCard(props) {
                 </CardContent>
                 <CardActions>
                     <div className="list-card__buttons">
-                        <Button size="small" onClick={()=> setOpenShare(true)}>Share</Button>
-                        <Button size="small" onClick={()=> history.push(`/lists/${item.id}`)}>View</Button>
-                        <Button size="small" onClick={()=> setOpenDelete(true)}>Delete</Button>
+                        { isUserLead &&
+                          <Button size="small" onClick={()=> setOpenShare(true)}>Share</Button>
+                        }
+                          <Button size="small" onClick={()=> history.push(`/lists/${item.id}`)}>View</Button>
+                        { isUserLead &&
+                          <Button size="small" onClick={()=> setOpenDelete(true)}>Delete</Button>
+                        }
                     </div>
                 </CardActions>
             </Card>

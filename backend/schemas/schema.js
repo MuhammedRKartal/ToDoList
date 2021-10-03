@@ -124,8 +124,9 @@ const listType = new GraphQLObjectType({
         //getting users of list
         users:{
             type: new GraphQLList(userType),
-            resolve(parent,args){
-                return User.find({listNames:parent.name})
+            resolve: async(parent,args)=>{
+                const list = await List.findById(parent.id)
+                return await User.find({email:list.users})
             }
         },
         //getting admins of list
@@ -271,7 +272,16 @@ const RootQuery = new GraphQLObjectType({
                 logT.save()
                 return await List.find({name:args.groupName});
             }
+        },
+
+        getGroupsThatUserIsAdmin:{
+            type:new GraphQLList(groupType),
+            resolve:async(parent,args,req)=>{
+                return Group.find({leadMail:req.email})
+            }
         }
+
+
     }
 })
 
@@ -355,7 +365,7 @@ const Mutation = new GraphQLObjectType({
                 
                 const user = await User.findOne({email:req.email})
                 if(user!== null){
-                    if(args.group){
+                    if(args.type === "GROUP"){
                         const leadCheck = await Group.find({leadMail:req.email,name:args.group})
                         if(leadCheck.length !== 0){
                             let logT = new Log({

@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react'
 import { Modal, TextField, Button, Typography, Box, Select, MenuItem, FormControl, InputLabel} from '@mui/material';
 import { useMutation, useQuery } from '@apollo/client';
 import { createListMutation } from '../../../gql/mutations'
-import { GET_GROUPS_QUERY } from '../../../gql/queries'
+import { GET_GROUPS_QUERY, GET_GROUPS_THAT_USER_IS_ADMIN_QUERY } from '../../../gql/queries'
 import { toast } from 'material-react-toastify';
 
 import './list-create.scss';
@@ -18,8 +18,9 @@ const style = {
     p: 4,
 };
 
+//listcreate component
 function ListCreate(props) {
-    const { modalOpen, setModalOpen, refetch } = props;
+    const {modalOpen, setModalOpen, refetch } = props;
     const [state, setState] = useState({
         name: '',
         description: '',
@@ -27,9 +28,11 @@ function ListCreate(props) {
         group: ''
     });
 
+    //call create list mutation
     const [handleListCreate, { data, loading, error }] = useMutation(createListMutation);
-    const {data: groupsData} = useQuery(GET_GROUPS_QUERY);
+    const {data: groupsData} = useQuery(GET_GROUPS_THAT_USER_IS_ADMIN_QUERY);
 
+    //while creating list if type is private make group null
     const onListCreate = () => {
         const payload = {...state};
         if(payload.type === 'PRIVATE') delete payload.group
@@ -40,6 +43,7 @@ function ListCreate(props) {
         })
     };
 
+    //at each successful change on data write success message, refetch and close modal
     useEffect(() => {
         if(data){
             toast.success(`List "${state.name}" is successfully created.`)
@@ -48,13 +52,16 @@ function ListCreate(props) {
         }
     }, [data])
 
+    //on change while writing input set state and input box
     const handleChange = e => {
         setState({...state, [e.target.name]: e.target.value});
     };
 
+    //close modal
     const handleModalClose = e => {
         setModalOpen(false);
     };
+
 
     return (
     <Modal
@@ -117,7 +124,7 @@ function ListCreate(props) {
                     onChange={handleChange}
                 >   
                     {
-                        groupsData?.getGroups?.map((group, index) => <MenuItem key={index} value={group.name}>{group.name}</MenuItem>)
+                        groupsData?.getGroupsThatUserIsAdmin?.map((group, index) => <MenuItem key={index} value={group.name}>{group.name}</MenuItem>)
                     }
                 </Select>
             </FormControl>
