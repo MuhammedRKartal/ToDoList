@@ -427,7 +427,7 @@ const Mutation = new GraphQLObjectType({
                             listID:args.listID
                         })
                             
-                        await listM.updateOne({$addToSet:{listItems: listE}})
+                        await listM.updateOne({$addToSet:{listItems:listE}})
                         listE.save()
         
                         let logT = new Log({
@@ -569,7 +569,7 @@ const Mutation = new GraphQLObjectType({
                 }
             }
         },
-
+        //
         addUserToList:{
             type:userType,
             args:{
@@ -589,7 +589,6 @@ const Mutation = new GraphQLObjectType({
                 let user = await User.findOne({email:args.email});
                 let list = await List.findById(args.listId);
 
-                console.log(user);
                 /*
                 if(!user){
                     const pw = "asd";
@@ -620,13 +619,17 @@ const Mutation = new GraphQLObjectType({
                 */
                 
                 //console.log(list);
-                if(list) {
-                    console.log(mailOptions);
-                    user = await User.findOne({email:args.email});
+                if(user && list) {
+                    //console.log(mailOptions);      
                     
                     const adminCheck = await List.find({admins:req.email,_id:args.listId});
-                    if(adminCheck.length !== 0){
-                        
+                    if(adminCheck.length !== 0){ 
+                        const isInList = await List.find({users:user.email, _id:args.listId})
+
+                        if(isInList.length !==0){
+                            return new Error("User is already in the list")
+                        }
+
                         await user.updateOne({$addToSet:{listNames:list.name}})
                         await list.updateOne({$addToSet:{users:args.email}})
 
@@ -645,15 +648,18 @@ const Mutation = new GraphQLObjectType({
                             time:Date.now()
                         })
                         logT.save()
-                        throw new Error("Unauthorized")
+                        return new Error("Unauthorized")
                     }
                 }
                 else{
-                    throw new Error("enter user and list name")
+                    return new Error("enter valid user and list name ")
                 }
                 
             } 
         },
+        //adding user to a group
+        //updating the users of group
+        //updating groups of user
         addUserToGroup:{
             type:userType,
             args:{
@@ -663,14 +669,21 @@ const Mutation = new GraphQLObjectType({
             resolve: async(parent,args,req)=>{
                 const user = await User.findOne({email:args.email});
                 const group = await Group.findById(args.groupId);
+                
+                const isInGroup = await Group.find({users:user.email,name:group.name})
+                
+                if(isInGroup.length !==0){
+                    return new Error("User is already in the group")
+                }
+
                 if(!user){
-                    throw new Error("Enter a valid e-mail")
+                    return new Error("Enter a valid e-mail")
                 }
                 else if(!group){
-                    throw new Error("Enter a valid group")
+                    return new Error("Enter a valid group")
                 }
                 else if(!group && !user){
-                    throw new Error("Enter a valid group and e-mail")
+                    return new Error("Enter a valid group and e-mail")
                 }
                 else{
                     const adminCheck = await Group.find({leadMail:req.email,name:group.name})
@@ -681,7 +694,7 @@ const Mutation = new GraphQLObjectType({
                         const list = await List.find({group:group.name})
                         
                         const names = list.map(item=>item.name)
-                        user.updateOne({$push:{listNames:{$each:names}}})
+                        await user.updateOne({$addToSet:{listNames:{$each:names}}})
                         
                         let logT = new Log({
                             email: user.email,
@@ -698,6 +711,7 @@ const Mutation = new GraphQLObjectType({
                 }
             } 
         },
+        //change the value of isDone like true or false
         changeListItemDone:{
             type:listItemType,
             args:{
@@ -713,7 +727,6 @@ const Mutation = new GraphQLObjectType({
                     throw new Error("Unauthorized")
                 }
             }
-
         },
         
         
