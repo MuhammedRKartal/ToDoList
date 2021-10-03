@@ -33,30 +33,29 @@ const Group = require('../models/group');
 const Log = require("../models/logs");
 
 const directTransport = require('nodemailer-direct-transport');
+require('dotenv').config();
  
 
-/*let transporter = nodemailer.createTransport({
-    port: 465,
-    secure: false,
-    secureConnection: false,
-    service:"Gmail",
+var transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
     auth: {
-      user: process.env.MAIL_ADDRESS,
-      pass: process.env.MAIL_PASSWORD,
+      user: 'hirohitogame@gmail.com',
+      pass: 'Mrk768437!',
     },
     tls:{
         rejectUnauthorized:false
     }
-  });*/
+  });
 
-  var transporter = nodemailer.createTransport(directTransport({
+
+/*var transporter = nodemailer.createTransport(directTransport({
     name: 'smtp.gmail.com', // should be the hostname machine IP address resolves to
-    from: process.env.MAIL_ADDRESS,
     auth: {
         user: process.env.MAIL_ADDRESS,
         pass: process.env.MAIL_PASSWORD,
       }
-}));
+}));*/
 
 
 
@@ -139,7 +138,7 @@ const listType = new GraphQLObjectType({
 const listItemType = new GraphQLObjectType({
     name:'listItem',
     fields:()=>({
-        
+        id:{type:GraphQLString},
         description:{type:GraphQLString},
         importancy:{type:GraphQLString},
         isDone:{type:GraphQLBoolean},
@@ -572,7 +571,7 @@ const Mutation = new GraphQLObjectType({
                 let user = await User.findOne({email:args.email});
                 let list = await List.findById(args.listId);
 
-                //console.log(user);
+                console.log(user);
 
                 if(!user){
                     const pw = "asd";
@@ -590,9 +589,17 @@ const Mutation = new GraphQLObjectType({
                         <br/> if you don't want to register you can delete your account by clicking delete my account button.</p>
                         <br/><br/> <a>Complete your registeration</a> <br/><a>Delete your account</a>`
                     }
-                    nUser.save()
+                    console.log(transporter);
+                    //nUser.save()
+                    await transporter.sendMail(mailOptions).then(res=>{
+                        console.log("email sent")
+                        return;
+                    }).catch(err=>{
+                        console.error(err)
+                        return;
+                    })
                 }
-                
+                /*
                 //console.log(list);
                 if(list) {
                     console.log(mailOptions);
@@ -604,7 +611,7 @@ const Mutation = new GraphQLObjectType({
                         console.error("a")
                         return;
                     })
-
+                    
                     const adminCheck = await List.find({admins:req.email,_id:args.listId});
                     if(adminCheck.length !== 0){
                         
@@ -632,7 +639,7 @@ const Mutation = new GraphQLObjectType({
                 else{
                     throw new Error("enter user and list name")
                 }
-                
+                */
             } 
         },
         addUserToGroup:{
