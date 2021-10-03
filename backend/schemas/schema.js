@@ -117,7 +117,7 @@ const listType = new GraphQLObjectType({
         listItems:{
             type: new GraphQLList(listItemType),
             resolve(parent,args){
-                console.log(parent.users);
+                
                 return listItem.find({listID:parent._id});//.populate().listName;
             }
         },
@@ -362,15 +362,18 @@ const Mutation = new GraphQLObjectType({
                                 time:Date.now()
                             })
                             logT.save()
+                            
+                            const group = await Group.findOne({name:args.group})
                             const list = new List({
                                 name:args.name,
                                 type:args.type,
                                 group:args.group,
                                 description:args.description,
-                                users:req.email,
+                                users:group.users,
                                 admins:req.email
                             })
-                            await user.updateOne({$addToSet:{listNames:args.name}})
+
+                            await User.updateMany({email:group.users},{$addToSet:{listNames:args.name}})
                             return await list.save()
                         }
                         else{
@@ -419,7 +422,7 @@ const Mutation = new GraphQLObjectType({
                 
                 if(listM.type === "GROUP"){
                     let adminCheck = await Group.find({leadMail:req.email,name:listM.group})
-                    console.log(adminCheck)
+                    
                     if(adminCheck.length!==0){
                         let listE = new listItem({
                             description:args.description,
@@ -524,23 +527,49 @@ const Mutation = new GraphQLObjectType({
             },
             resolve: async(parent,args,req)=>{
                 const list = await List.findById(args.listId);
-                
-                const user = User.find({listNames:list.name})
-                await user.updateMany({$pull:{listNames:list.name}})
-
-                const liindex = listItem.find({listID:args.listId})
-                await liindex.deleteOne({listID:args.listId})
-
-                await list.deleteOne({id:args.listId})
-
-                let logT = new Log({
-                    email: req.email,
-                    operation: `Removed the list:  ${list.name}`,
-                    time:Date.now()
-                })
-                logT.save()
-
-                return await list
+                if(list){
+                    if(list.type === "GROUP"){
+                        const group = await Group.findOne({name:list.group})
+                        
+                        if(group.leadMail !== req.email){
+                            return new Error("Unauthorized, you must be lead of the group to delete this.")
+                        }
+                        else{
+                            await User.updateMany({listNames:list.name},{$pull:{listNames:list.name}})
+    
+                            const liindex = listItem.find({listID:args.listId})
+                            await liindex.deleteOne({listID:args.listId})
+    
+                            await list.deleteOne({id:args.listId})
+                            let logT = new Log({
+                                email: req.email,
+                                operation: `Removed the list:  ${list.name}`,
+                                time:Date.now()
+                            })
+                            logT.save()
+                            return await list
+                        }
+                    }
+                    else{
+                        await User.updateMany({listNames:list.name},{$pull:{listNames:list.name}})
+    
+                        const liindex = listItem.find({listID:args.listId})
+                        await liindex.deleteOne({listID:args.listId})
+    
+                        await list.deleteOne({id:args.listId})
+    
+                        let logT = new Log({
+                            email: req.email,
+                            operation: `Removed the list:  ${list.name}`,
+                            time:Date.now()
+                        })
+                        logT.save()
+                        return await list
+                    }
+                }
+                else{
+                    return new Error("There is no list with that name!")
+                }   
             }
         },
         removeListItem:{
@@ -555,21 +584,26 @@ const Mutation = new GraphQLObjectType({
                     await list.updateOne({$pull:{listItems:args.itemId}})
                     
                     let logT = new Log({
-                        email: user.email,
+                        email: req.email,
                         operation: `${req.email}, removed the list item ${args.itemId}`,
                         time:Date.now()
                     })
                     logT.save()
 
                     return await listItem.findByIdAndDelete(args.itemId)
-                   
                 }
                 else{
                     throw new Error("Unauthorized")
                 }
             }
         },
-        //
+
+
+        //adding user to a given list
+        //if user already in list throw error
+        //if the current user is not admin give unauthorized error
+        //if email or list Id is invalid return error
+        //updates users
         addUserToList:{
             type:userType,
             args:{
@@ -657,6 +691,8 @@ const Mutation = new GraphQLObjectType({
                 
             } 
         },
+
+
         //adding user to a group
         //updating the users of group
         //updating groups of user
@@ -692,9 +728,10 @@ const Mutation = new GraphQLObjectType({
                         await user.updateOne({$addToSet:{groupNames:group.name}})
                         await group.updateOne({$addToSet:{users:args.email}})
                         const list = await List.find({group:group.name})
-                        
+
                         const names = list.map(item=>item.name)
                         await user.updateOne({$addToSet:{listNames:{$each:names}}})
+                        await List.updateMany({group:group.name},{$addToSet:{users:args.email}})
                         
                         let logT = new Log({
                             email: user.email,
