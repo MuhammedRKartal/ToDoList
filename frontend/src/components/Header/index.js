@@ -5,7 +5,7 @@ import './header.scss';
 
 function Header(props) {
     const {isAuthPage} = props;
-    const history = useHistory();
+    const history = useHistory(); //holding the history for returning back the old pages
     const { setUser } = useContext(UserContext);
     const menuItems = [
         {
@@ -21,6 +21,12 @@ function Header(props) {
             path: '/lists'
         },
     ]
+
+    /*
+        On the logout operation remove the user from localstorage
+        Change the usercontext content to unauthenticated
+        Go to sign in file
+    */
     const handleLogout = () => {
         localStorage.setItem('token', 'login');
         localStorage.removeItem('user');

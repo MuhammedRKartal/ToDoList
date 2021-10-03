@@ -30,9 +30,11 @@ function ListCreate(props) {
 
     //call create list mutation
     const [handleListCreate, { data, loading, error }] = useMutation(createListMutation);
-    const {data: groupsData} = useQuery(GET_GROUPS_THAT_USER_IS_ADMIN_QUERY);
+    //find the groups that user is admin because we will use it in a dropbox to select list group while creating it
+    const {data: groupsData} = useQuery(GET_GROUPS_THAT_USER_IS_ADMIN_QUERY); 
 
     //while creating list if type is private make group null
+    //then fill the args to use mutation
     const onListCreate = () => {
         const payload = {...state};
         if(payload.type === 'PRIVATE') delete payload.group
@@ -62,7 +64,9 @@ function ListCreate(props) {
         setModalOpen(false);
     };
 
-
+    /*
+        Almost the same with create group
+    */
     return (
     <Modal
         open={modalOpen}

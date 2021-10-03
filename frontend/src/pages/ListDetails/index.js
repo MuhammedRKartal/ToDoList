@@ -19,6 +19,7 @@ const styles = theme => ({
     }
   });
 
+//create listDetails component
 function ListDetails(props) {
     const { id } = useParams();
     const { classes } = props;
@@ -27,10 +28,11 @@ function ListDetails(props) {
         listItems: []
     }
     const [list, setList] = useState({ ...defaultList });
-    const [isDragging, setIsDragging] = useState(false);
+    const [isDragging, setIsDragging] = useState(false); //there is a dragging situation
     const [modalOpen, setModalOpen] = React.useState(false);
-    const { user, setUser } = useContext(UserContext);
+    const { user, setUser } = useContext(UserContext); //get user
 
+    //get query
     const {data, loading, error, refetch} = useQuery(GET_LIST_QUERY,{
         variables: {
           listId: id
@@ -66,9 +68,16 @@ function ListDetails(props) {
         return null;
       };
       
+      //is the current user admin, if he/she is we will allow to use create new list item feature
       const isListAdmin = data?.getList?.admins.map(item=>item.email).includes(user.user.email)
 
 
+      /*
+        Create a draggable list
+        Write List name
+        if the current user is admin allow create new list item button
+        after dragging and object re-set the places
+      */
     return (
         <div>
             {

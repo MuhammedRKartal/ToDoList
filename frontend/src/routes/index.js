@@ -14,14 +14,17 @@ import Home from '../pages/Home';
 import Groups from '../pages/Groups';
 import { UserContext } from '../contexts';
 
+
 const listofPages = [
     '/sign-in',
     '/register',
     '/404'
 ];
 
+
 const Routes = ({ location }) => {
-    const [user, setUser] = useState();
+    const [user, setUser] = useState(); //get current user
+    //create the user 
     const value = { user: {isAuthenticated:!!localStorage.getItem('user'), user: JSON.parse(localStorage.getItem('user'))}, setUser };
 
     if(listofPages.indexOf(location.pathname) > -1) {

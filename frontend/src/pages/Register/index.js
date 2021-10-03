@@ -17,6 +17,7 @@ function Register() {
 
     const { user, setUser } = useContext(UserContext);
 
+    //if mutation doesn't turn error write success message and go sign in page
     useEffect(() => {
         if(data){
             toast.success('Register is successful!')
@@ -24,12 +25,14 @@ function Register() {
         }
     }, [data])
 
+    //if there is an error set user to unauthenticated
     useEffect(() => {
         if(error){
             setUser({isAuthenticated: false, user: null})
         }
     }, [error])
 
+    //on calling register mutation set variables
     const onRegister = e => {
         handleRegister({
             variables: {
@@ -39,6 +42,8 @@ function Register() {
             }
           });
     };
+
+    //input fields handlers
     const handleNameChange = e => {
         setName(e.target.value);
     };
@@ -48,6 +53,7 @@ function Register() {
     const handlePasswordChange = e => {
         setPassword(e.target.value);
     };
+
     return (
         <div className="register">
             <Typography variant="h4" gutterBottom component="div">

@@ -6,17 +6,21 @@ import { useMutation } from '@apollo/client';
 import { removeListItemMutation, changeListItemDoneMutation } from '../../../gql/mutations'
 import ListItemDeleteDialog from './Delete';
 
+//create list item component
 const Item = ({ itemObject, index, isDragging, refetch }) => {
-  const [openDelete, setOpenDelete] = useState(false);
+  const [openDelete, setOpenDelete] = useState(false); //if its false we won't see the item
   
-  const [handleListItemDelete, { data:listItemDeleteData }] = useMutation(removeListItemMutation);
-  const [handleListItemDone, { data: listItemDoneData }] = useMutation(changeListItemDoneMutation);
+  const [handleListItemDelete, { data:listItemDeleteData }] = useMutation(removeListItemMutation); //remove the item
+  const [handleListItemDone, { data: listItemDoneData }] = useMutation(changeListItemDoneMutation); //change the isDone of item
+  
+  //give color related to the importancy of item
   const getColor = () =>{
     if(itemObject.importancy === 'HIGH') return 'orange';
     else if(itemObject.importancy === 'NORMAL') return 'lightblue';
     else if(itemObject.importancy === 'LOW') return 'lightgreen';
     return 'black';
   }
+  //if we click a item make the value to reverse of it
   const handleToggle = () => {
     handleListItemDone({
       variables: {
@@ -26,6 +30,7 @@ const Item = ({ itemObject, index, isDragging, refetch }) => {
     })
   };
 
+  //fill the args on delete
   const onItemDelete = () => {
     handleListItemDelete({
       variables: {
@@ -35,6 +40,7 @@ const Item = ({ itemObject, index, isDragging, refetch }) => {
     setOpenDelete(false)
   }
 
+  //at each change of listItemDeleteData, refect and setOpenDelete false
   useEffect(() => {
     if(listItemDeleteData){
         refetch()
@@ -42,12 +48,21 @@ const Item = ({ itemObject, index, isDragging, refetch }) => {
     }
   }, [listItemDeleteData])
 
+  //at each change on listItemDoneData refect
   useEffect(() => {
     if(listItemDoneData){
         refetch()
     }
   }, [listItemDoneData])
 
+  /*
+    Create draggable object
+    Create a list item
+    Make the whole listitem a button, create a checkbox and put text field
+    Create an iconbutton and give it color related to importancy
+    Create an iconbutton and give it trash can symbol, make it able to dalete elements
+    While moving the buttons don't show them
+  */
   return (
     <>
     <Draggable draggableId={itemObject.id} key={itemObject.id} index={index}>
@@ -80,7 +95,6 @@ const Item = ({ itemObject, index, isDragging, refetch }) => {
               edge="end"
               aria-label="comments"
               question-uid={itemObject.id}
-              onClick={()=>setOpenDelete(true)}
             >
             {!isDragging && <div style={{height: '20px',width: '20px', backgroundColor: getColor()}}/>}
             </IconButton>

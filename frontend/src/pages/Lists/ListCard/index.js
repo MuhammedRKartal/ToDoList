@@ -14,21 +14,25 @@ function ListCard(props) {
     const history = useHistory();
 
     const { user, setUser } = useContext(UserContext);
+    //if the user is lead don't show share and remove elements in card
     const isUserLead = item.admins.map(item=>item.email).includes((user.user.email));
     
-    //item.admins.map(item=>item.email).includes((user.user.email));
-    
-    
-   
+    /*
+      Get onlistdelete element from props
+      When we clicked the button enter listdelete file and delete given item with id
+      close the listdelete file
+    */
     const onListDeleteClick = () => {
         onListDelete(item.id);
         setOpenDelete(false);
     };
     
+    //in the delete file if we select close button close the flashup screen
     const handleDeleteClose = () => {
       setOpenDelete(false);
     };
 
+    //Same system with groupcard
     const stringToColor = (string) => {
         let hash = 0;
         let i;      
@@ -53,6 +57,15 @@ function ListCard(props) {
           children: `${splittedName[0][0]}${splittedName.length > 1 ? splittedName[1][0] : ''}`,
         } : {};
       }
+
+    /*
+      Almost same with the groupcard
+      Only difference is share and delete operations
+      On share enters the share component
+      On delete enters the delete component
+      On view enters the list page with given id
+      If user isn't admin he/she can't see the share and delete operations
+    */
     return (
         <div style={{border: `1px solid ${item.users.length > 1 ? 'blue' : 'red'}`}}>
             <Card sx={{ minWidth: 275 }}>

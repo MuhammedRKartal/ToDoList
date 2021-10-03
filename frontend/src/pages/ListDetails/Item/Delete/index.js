@@ -5,6 +5,7 @@ import { Button, Dialog, DialogActions, DialogContent, DialogContentText, Dialog
 
 function ListDelete(props) {
 
+    //get 
     const {open, handleDeleteClose, name, onListDeleteClick} = props;
     
     return (

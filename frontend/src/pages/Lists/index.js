@@ -13,6 +13,8 @@ function Lists() {
     const [handleListDelete, { data: removeListData, loading: removeListLoading, error: removeListError }] = useMutation(removeListMutation);
     const [lists, setLists] = useState([]);
     const [modalOpen, setModalOpen] = React.useState(false);
+
+    //on delete button click call mutation
     const onListDelete = (id) => {
         handleListDelete({
             variables: {
@@ -21,14 +23,17 @@ function Lists() {
         })
     }
 
+    //if anything happens call the getlists query
     useEffect(() => {
         getLists({variables: {}});
     }, [])
 
+    //if there is a change on data add it to lists(if we add something)
     useEffect(() => {
         data && setLists(data?.getLists);
     }, [data])
 
+    //if we remove something get lists again
     useEffect(() => {
         if(removeListData){
             getLists();
