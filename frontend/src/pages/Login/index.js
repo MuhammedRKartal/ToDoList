@@ -3,13 +3,15 @@ import { TextField, Button, Typography } from '@mui/material';
 import { useLazyQuery } from '@apollo/client';
 import { LOGIN_QUERY } from '../../gql/queries'
 import { UserContext } from '../../contexts';
+import { useHistory } from 'react-router-dom'
+
 import './login.scss'
 
 function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [handleLogin, { data, error }] = useLazyQuery(LOGIN_QUERY);
-    
+    const history = useHistory();
     const { user, setUser } = useContext(UserContext);
 
     useEffect(() => {
@@ -27,6 +29,7 @@ function Login() {
     }, [error])
 
     const onLogin = e => {
+        console.log('login triggered')
         handleLogin({
             variables: {
                 email,
@@ -81,8 +84,7 @@ function Login() {
             </Button>
             </div>
             <div className="login__action">
-                <Button>Register</Button>
-                <Button>Forgot Password?</Button>
+                <Button onClick={()=>history.push('/register')}>Register</Button>
             </div>
         </div>
     )

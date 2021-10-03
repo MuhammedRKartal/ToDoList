@@ -2,13 +2,15 @@ import React, {useState} from 'react'
 import { Card, CardActions, CardContent, Button, Typography, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Avatar } from '@mui/material';
 import ListDelete from './Delete';
 import ListShare from './Share';
+import { useHistory } from 'react-router-dom';
 
 import './list-card.scss';
 
 function ListCard(props) {
-    const {item, onListDelete} = props;
+    const {item, onListDelete, refetch} = props;
     const [openDelete, setOpenDelete] = useState(false);
     const [openShare, setOpenShare] = useState(false);
+    const history = useHistory();
    
     const onListDeleteClick = () => {
         onListDelete(item.id);
@@ -35,7 +37,6 @@ function ListCard(props) {
       }
 
     const stringAvatar = (name) => {
-        console.log(name)
         const splittedName = name.split(' ');
         return name ? {
           sx: {
@@ -68,7 +69,7 @@ function ListCard(props) {
                 <CardActions>
                     <div className="list-card__buttons">
                         <Button size="small" onClick={()=> setOpenShare(true)}>Share</Button>
-                        <Button size="small">View</Button>
+                        <Button size="small" onClick={()=> history.push(`/lists/${item.id}`)}>View</Button>
                         <Button size="small" onClick={()=> setOpenDelete(true)}>Delete</Button>
                     </div>
                 </CardActions>
@@ -86,6 +87,7 @@ function ListCard(props) {
               setModalOpen={setOpenShare}
               listId={item.id}
               name={item.name}
+              refetch={refetch}
             />
             
         </div>

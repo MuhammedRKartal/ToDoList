@@ -2,6 +2,7 @@ import React, {useState, useEffect} from 'react'
 import { Modal, TextField, Button, Typography, Box, Select, MenuItem, FormControl, InputLabel} from '@mui/material';
 import { useMutation } from '@apollo/client';
 import { createGroupMutation } from '../../../gql/mutations'
+import { toast } from 'material-react-toastify';
 
 import './group-create.scss';
 
@@ -16,19 +17,17 @@ const style = {
     p: 4,
 };
 
+//creates a GroupCreate component
 function GroupCreate(props) {
-    const { modalOpen, setModalOpen } = props;
-
-    //create a state
+    const { modalOpen, setModalOpen, refetch } = props; //variables
+    //state
     const [state, setState] = useState({
         name: '',
     });
 
-    //call the mutation
-    const [handleGroupCreate, { data, loading, error }] = useMutation(createGroupMutation);
+    const [handleGroupCreate, { data, loading, error }] = useMutation(createGroupMutation); //call create group mutation once
 
-    //after creating a group, filling the state
-    //used in create button of modal
+    //while doing each create operation set state
     const onListCreate = () => {
         handleGroupCreate({
             variables: {
@@ -37,25 +36,36 @@ function GroupCreate(props) {
         })
     };
 
-    //each time data changes reload the window location
+    /*
+        If data changes write toast.success message
+        refetch the groups
+        close the modal
+    */
     useEffect(() => {
         if(data){
-            window.location.reload()
+            toast.success(`Group "${state.name}" is successfully created.`)
+            refetch()
+            setModalOpen(false)
         }
     }, [data])
 
-    //changes the state on change
+    //changes the state
     const handleChange = e => {
         setState({...state, [e.target.name]: e.target.value});
     };
 
-    //used in close button of modal
-    //creates modal popup
+    //close modal
     const handleModalClose = e => {
         setModalOpen(false);
     };
 
-    //modal is to open a popup
+    /*
+        Open a modal
+        Create Group text as title
+        Get input and update it while we are writing, also set the state
+        Creating a share button calls onListCreate method
+        Creating a cancel button to close 
+    */
     return (
     <Modal
         open={modalOpen}
@@ -89,7 +99,6 @@ function GroupCreate(props) {
                 >
                 Create
                 </Button>
-
                 <Button
                 type="submit"
                 fullWidth

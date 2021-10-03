@@ -39,17 +39,6 @@ export const createGroupMutation=gql`
     }
 `
 
-export const addListItemMutation=gql`
-    mutation($description:String!,$importancy:String,$listID:String!){
-        addListItem(description:$description, importancy:$importancy, listID:$listID){
-            description
-            importancy
-            listID
-            isDone
-        }
-    }
-`
-
 export const removeUserMutation=gql`
 mutation($email:String!){
     removeUser(email:$email){
@@ -74,10 +63,37 @@ export const addUserToListMutation=gql`
     }
 `
 
-export const addUserToGroupMutation=gql`
+export const addUserToGroupMutation = gql`
     mutation($email:String!,$groupId:String!){
         addUserToGroup(email:$email,groupId:$groupId){
             name
         }
     }
+`
+
+export const createListItemMutation=gql`
+    mutation($description:String!,$importancy:String,$listID:String!){
+        addListItem(description:$description, importancy:$importancy, listID:$listID){
+            description
+            importancy
+            listID
+            isDone
+        }
+    }
+`
+
+export const removeListItemMutation = gql`
+    mutation($itemId:String!){
+        removeListItem(itemId:$itemId){
+            description
+        }
+}
+`
+
+export const changeListItemDoneMutation = gql`
+    mutation($itemId:String!, $value: Boolean!){
+        changeListItemDone(itemId:$itemId, value: $value){
+            description
+        }
+}
 `

@@ -6,8 +6,9 @@ import AuthBase from '../components/Layout/AuthBase';
 import RestrictedRoute from './RestrictedRoute';
 
 import Lists from '../pages/Lists';
+import ListDetails from '../pages/ListDetails';
 import Login from '../pages/Login';
-import ResetPassword from '../pages/ResetPassword';
+import Register from '../pages/Register';
 import NotFound from '../pages/NotFound';
 import Home from '../pages/Home';
 import Groups from '../pages/Groups';
@@ -15,7 +16,7 @@ import { UserContext } from '../contexts';
 
 const listofPages = [
     '/sign-in',
-    '/reset-password',
+    '/register',
     '/404'
 ];
 
@@ -29,7 +30,7 @@ const Routes = ({ location }) => {
                 <AuthBase>
                     <Switch location={location}>
                         <Route exact path="/sign-in" component={Login}/>
-                        <Route exact path="/reset-password" component={ResetPassword}/>
+                        <Route exact path="/register" component={Register}/>
                         <Route exact path="/404" component={NotFound}/>
                     </Switch>
                 </AuthBase>
@@ -44,6 +45,7 @@ const Routes = ({ location }) => {
                         <RestrictedRoute exact path="/" component={Home} />
                             
                         <RestrictedRoute exact path="/lists" component={Lists}/>
+                        <RestrictedRoute path="/lists/:id" component={ListDetails}/>
                         <RestrictedRoute exact path="/groups" component={Groups}/>
                             
                         <Redirect to={"/"}/>

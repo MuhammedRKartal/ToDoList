@@ -33,9 +33,7 @@ function Header(props) {
             <div className="header__name">To-doly</div>
             {!isAuthPage && <div className="header__nav">
                 {menuItems.map((item, index) => {
-                    return <div key={index} className="header__nav-item">
-                                <Link style={{display: 'block'}} key={index} to={item.path}>{item.name}</Link>
-                            </div>
+                    return <div key={index} className="header__nav-item"><Link style={{display: 'block'}} key={index} to={item.path}>{item.name}</Link></div>
                 })}
                 <div className="header__nav-item" onClick={handleLogout}>Logout</div>
             </div>

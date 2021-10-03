@@ -16,15 +16,18 @@ const style = {
     p: 4,
 };
 
+//create a Groupshare component to use in GroupCard index.js
 function GroupShare(props) {
-    const { modalOpen, setModalOpen, groupId, name } = props;
+    const { modalOpen, setModalOpen, groupId, name, refetch } = props; //variables from props
+    //state
     const [state, setState] = useState({
         email: '',
         groupId: groupId
     });
 
-    const [handleUserShare, { data, loading, error }] = useMutation(addUserToGroupMutation);
+    const [handleUserShare, { data, loading, error }] = useMutation(addUserToGroupMutation); //calling the mutation
 
+    //If we click the create button fills the variables state with given email, and current group's id
     const onListCreate = () => {
         handleUserShare({
             variables: {
@@ -33,20 +36,32 @@ function GroupShare(props) {
         })
     };
 
+    //If data changes, refetch and close the modal
     useEffect(() => {
         if(data){
-            window.location.reload()
+            refetch();
+            setModalOpen(false);
         }
     }, [data])
 
+    //Changes the given target's value and fill's state
     const handleChange = e => {
         setState({...state, [e.target.name]: e.target.value});
     };
 
+    //close modal
     const handleModalClose = e => {
         setModalOpen(false);
     };
 
+    //modal screen 
+    /*
+        Share group text
+        Information text
+        Get email input with textfield, at each change in the value change the state.email
+        Creating a share button calls onListCreate method
+        Creating a cancel button to close 
+    */ 
     return (
     <Modal
         open={modalOpen}

@@ -31,7 +31,7 @@ function Lists() {
 
     useEffect(() => {
         if(removeListData){
-            window.location.reload();
+            getLists();
         } 
     }, [removeListData])
 
@@ -49,11 +49,13 @@ function Lists() {
                     <ListCard 
                         key={index} 
                         item={item} 
-                        onListDelete={onListDelete} />)}
+                        onListDelete={onListDelete}
+                        refetch={getLists} />)}
             </div>
             {loading && <div>Loading...</div>}
             {error && <div>An error occured. Please try again later.</div>}
-            <ListCreate modalOpen={modalOpen} setModalOpen={setModalOpen} />
+            <ListCreate modalOpen={modalOpen} setModalOpen={setModalOpen} refetch={getLists} />
+
         </div>
     )
 }

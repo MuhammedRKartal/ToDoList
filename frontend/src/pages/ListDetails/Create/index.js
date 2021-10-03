@@ -1,9 +1,10 @@
 import React, {useState, useEffect} from 'react'
 import { Modal, TextField, Button, Typography, Box, Select, MenuItem, FormControl, InputLabel} from '@mui/material';
-import { useMutation, useQuery } from '@apollo/client';
-import { addUserToListMutation } from '../../../../gql/mutations'
+import { useMutation } from '@apollo/client';
+import { createListItemMutation } from '../../../gql/mutations'
+import { toast } from 'material-react-toastify';
 
-import './list-share.scss';
+import './list-create.scss';
 
 const style = {
     position: 'absolute',
@@ -16,17 +17,18 @@ const style = {
     p: 4,
 };
 
-function ListShare(props) {
-    const { modalOpen, setModalOpen, listId, name, refetch } = props;
+function ListItemCreate(props) {
+    const { modalOpen, setModalOpen, refetch, listId } = props;
     const [state, setState] = useState({
-        email: '',
-        listId: listId
+        listID: listId,
+        description: '',
+        importancy: '',
     });
 
-    const [handleUserShare, { data, loading, error }] = useMutation(addUserToListMutation);
+    const [handleListItemCreate, { data, loading, error }] = useMutation(createListItemMutation);
 
-    const onListCreate = () => {
-        handleUserShare({
+    const onListItemCreate = () => {
+        handleListItemCreate({
             variables: {
                 ...state 
             }
@@ -35,8 +37,9 @@ function ListShare(props) {
 
     useEffect(() => {
         if(data){
-            refetch();
-            setModalOpen(false);
+            toast.success(`List item "${state.description}" is successfully created.`)
+            refetch()
+            setModalOpen(false)
         }
     }, [data])
 
@@ -57,22 +60,36 @@ function ListShare(props) {
       >
         <Box sx={style}>
             <Typography id="modal-modal-title" variant="h4" component="h2">
-                Share List
-            </Typography>
-            <Typography id="modal-modal-subtitle" variant="subtitle" component="div">
-                You can share {name} list with your friends by entering their email.
+                Create List
             </Typography>
             <TextField
                 margin="normal"
                 required
                 fullWidth
-                id="email"
-                label="Email"
-                name="email"
-                autoFocus
-                value={ state.email }
+                id="description"
+                label="Description"
+                name="description"
+                value={ state.description }
                 onChange={ handleChange }
             />
+            <FormControl variant="standard" sx={{  width: '98%', marginTop: 2, marginBottom: 2, marginLeft: '5px' }}>
+                <InputLabel id="importancy-label">Type</InputLabel>
+                <Select
+                    labelId="importancy-label"
+                    fullWidth
+                    id="importancy"
+                    label="Importancy"
+                    name="importancy"
+                    placeholder="Importancy"
+                    value={state.importancy}
+                    onChange={handleChange}
+                >
+                    <MenuItem value="LOW">Low</MenuItem>
+                    <MenuItem value="NORMAL">Normal</MenuItem>
+                    <MenuItem value="HIGH">High</MenuItem>
+                </Select>
+            </FormControl>
+            
             <div className="list-create__actions">
                 <Button
                 type="submit"
@@ -80,9 +97,8 @@ function ListShare(props) {
                 color="success"
                 variant="contained"
                 sx={{ mt : 2, mb: 2 }}
-                onClick={onListCreate}
-                >
-                Share
+                onClick={onListItemCreate}>
+                Create
                 </Button>
                 <Button
                 type="submit"
@@ -100,4 +116,4 @@ function ListShare(props) {
     )
 }
 
-export default ListShare
+export default ListItemCreate

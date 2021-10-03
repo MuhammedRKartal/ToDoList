@@ -3,6 +3,7 @@ import { Modal, TextField, Button, Typography, Box, Select, MenuItem, FormContro
 import { useMutation, useQuery } from '@apollo/client';
 import { createListMutation } from '../../../gql/mutations'
 import { GET_GROUPS_QUERY } from '../../../gql/queries'
+import { toast } from 'material-react-toastify';
 
 import './list-create.scss';
 
@@ -18,7 +19,7 @@ const style = {
 };
 
 function ListCreate(props) {
-    const { modalOpen, setModalOpen } = props;
+    const { modalOpen, setModalOpen, refetch } = props;
     const [state, setState] = useState({
         name: '',
         description: '',
@@ -41,12 +42,13 @@ function ListCreate(props) {
 
     useEffect(() => {
         if(data){
-            window.location.reload()
+            toast.success(`List "${state.name}" is successfully created.`)
+            refetch()
+            setModalOpen(false)
         }
     }, [data])
 
     const handleChange = e => {
-        console.log(e.target.name, e.target.value);
         setState({...state, [e.target.name]: e.target.value});
     };
 

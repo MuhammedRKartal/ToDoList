@@ -2,27 +2,39 @@ import React, {useEffect, useState} from 'react'
 import ListCard from './GroupCard'
 import { useLazyQuery } from '@apollo/client';
 import { GET_GROUPS_QUERY } from '../../gql/queries';
-import ListCreate from './Create';
+import GroupCreate from './Create';
 import { Button, Typography } from '@mui/material';
 
 import './groups.scss';
 
 function Groups() {
+    /*
+    Call query with lazy query
+    It puts a pointer to the database and calls query on demand
+    */
     const [getGroups, {data, loading, error}] = useLazyQuery(GET_GROUPS_QUERY);
-    const [groups, setGroups] = useState([]);
-    const [modalOpen, setModalOpen] = React.useState(false);
+    const [groups, setGroups] = useState([]); //state
+    const [modalOpen, setModalOpen] = React.useState(false); //modal
 
+    //if any change get the groups
     useEffect(() => {
         getGroups({variables: {}});
     }, [])
 
+    //if any change in the data set groups with current groups in database
     useEffect(() => {
         data && setGroups(data?.getGroups);
     }, [data])
 
-
-
-
+    //Group cards page
+    /*
+        Groups text
+        Create new group button, on the click it opens the modal
+        Each group have a item we are mapping them with indexes and fetching by calling getGroups
+        If we are getting the info from database, in the wait phase it writes Loading...
+        If there is an error prints error message
+        Calls the groupcreate component
+    */
     return (
         <div>
             <div className="groups__header">
@@ -35,11 +47,12 @@ function Groups() {
                 {groups.map((item, index) => 
                     <ListCard 
                         key={index} 
-                        item={item} />)}
+                        item={item}
+                        refetch={getGroups} />)}
             </div>
             {loading && <div>Loading...</div>}
             {error && <div>An error occured. Please try again later.</div>}
-            <ListCreate modalOpen={modalOpen} setModalOpen={setModalOpen} />
+            <GroupCreate modalOpen={modalOpen} setModalOpen={setModalOpen} refetch={getGroups} />
         </div>
     )
 }

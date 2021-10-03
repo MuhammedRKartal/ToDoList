@@ -71,3 +71,24 @@ export const GET_GROUPS_QUERY = gql`
         }
     }
 `
+
+export const GET_LIST_QUERY = gql`
+    query($listId:String!){
+        getList(listId:$listId){
+            id
+            name
+            type
+            description
+            group
+            listItems{
+                id
+                description
+                importancy
+                isDone
+            }
+            users{
+                name
+            } 
+        }
+    }
+`
