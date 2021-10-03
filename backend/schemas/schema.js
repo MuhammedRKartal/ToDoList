@@ -553,12 +553,16 @@ const Mutation = new GraphQLObjectType({
                 itemId:{type:GraphQLString}
             },
             resolve: async(parent,args,req)=>{
-                const list = List.find({listItems:args.itemId});
                 const adminCheck = await List.find({admins:req.email,listItems:args.itemId})
-                console.log(adminCheck);
-                /*if(adminCheck.length !== 0){
-
-                }*/
+                if(adminCheck.length !== 0){
+                    const list = List.find({listItems:args.itemId});
+                    await list.updateOne({$pull:{listItems:args.itemId}})
+                    return await listItem.findByIdAndDelete(args.itemId)
+                   
+                }
+                else{
+                    throw new Error("Unauthorized")
+                }
             }
         },
 
