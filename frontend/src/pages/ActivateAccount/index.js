@@ -1,8 +1,8 @@
-import React, {useContext, useEffect} from 'react'
-import { TextField, Button, Typography } from '@mui/material';
+import React, {useEffect} from 'react'
+import { Button, Typography } from '@mui/material';
 import { useMutation } from '@apollo/client';
 import { confirmationMutation} from '../../gql/mutations'
-import { UserContext } from '../../contexts';
+
 import { useHistory,useParams } from 'react-router-dom'
 import { toast } from 'material-react-toastify';
 
@@ -11,7 +11,7 @@ import './activate-account.scss'
 function ActivateAccount() {
     const { token } = useParams();
     const history = useHistory();
-    const { user, setUser } = useContext(UserContext);
+    //const { user, setUser } = useContext(UserContext);
 
     const [handleConfirmation, { data, loading, error }] = useMutation(confirmationMutation); //call create group mutation once
 

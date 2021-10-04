@@ -638,6 +638,7 @@ const Mutation = new GraphQLObjectType({
                                 operation: `Removed the list:  ${list.name}`,
                                 time:Date.now()
                             })
+                            
                             logT.save()
                             return await list
                         }
@@ -722,22 +723,41 @@ const Mutation = new GraphQLObjectType({
                 let user = await User.findOne({email:args.email});
                 let list = await List.findById(args.listId);
 
+                const deleteurl = `http://localhost:3000/delete-account/`
+                const signinurl = `http://localhost:3000/sign-in/`
                 
                 if(!user){
-                    const pw = crypto.randomBytes(48).toString('hex');
+                    const pw = crypto.randomBytes(12).toString('hex');
                     user = new User({
                         email:args.email,
                         password:pw,
                         name:args.email
                     })
+                    /*
+                    const emailToken = jwt.sign({
+                        email: args.email,
+                        name:args.email,
+                        password: pw
+                    },
+                    process.env.EMAIL_TOKEN,
+                    {
+                        expiresIn:'1d'
+                    }
+                    )   
+                    */
                     mailOptions = {
                         from:"todoly.noreply@gmail.com",
                         to:args.email,
                         subject:'List invitation',
                         html: `<p>Welcome, <b>${req.email}</b>, added you to a To'Doly list. 
-                        <br/> You can complete your registration by clicking the link below. 
-                        <br/> if you don't want to register you can delete your account by clicking delete my account button.</p>
-                        <br/><br/> <a>Complete your registeration</a> <br/><a>Delete your account</a>`
+                        <br/> Your account is automatically created. 
+                        <br/> You can log in the website with your email address.
+                        <br/> Your password is: ${pw}
+                        
+                        <br/><br/> Delete my account and add me to block list: ${deleteurl}
+                        <br/> Sign in: ${signinurl}
+                        </p>
+                        `
                     }
                     user.save()
                 }
@@ -870,10 +890,6 @@ const Mutation = new GraphQLObjectType({
                 }
             }
         },
-        
-        
-        
-     
 
     }
 })

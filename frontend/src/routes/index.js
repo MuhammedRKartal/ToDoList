@@ -13,6 +13,7 @@ import NotFound from '../pages/NotFound';
 import Home from '../pages/Home';
 import Groups from '../pages/Groups';
 import ActivateAccount from '../pages/ActivateAccount'
+import DeleteUserAndBlock from '../pages/DeleteUserAndBlock';
 import { UserContext } from '../contexts';
 
 
@@ -38,6 +39,7 @@ const Routes = ({ location }) => {
                         <Route exact path="/sign-in" component={Login}/>
                         <Route exact path="/register" component={Register}/>
                         <Route path="/activate-account/:token" component={ActivateAccount}/>
+                        <Route path="/delete-user/:token" component={DeleteUserAndBlock}/>
                         <Route exact path="/404" component={NotFound}/>
                     </Switch>
                     
