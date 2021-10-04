@@ -6,6 +6,9 @@ const Importancy = require('../helpers/importancy')
 //authentication
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+
+
 
 //nodemailer
 const nodemailer = require('nodemailer');
@@ -36,31 +39,14 @@ require('dotenv').config();
  
 //will work on the sending mail, it gave an error, couldn't send it
 
-/*
-var transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
+
+const transporter = nodemailer.createTransport({
+    service: "gmail",
     auth: {
-      user: 'eapleasedontban@gmail.com',
-      pass: 'alpgokcek',
-    },
-    tls:{
-        rejectUnauthorized:false
+      user: 'todoly.noreply@gmail.com',
+      pass: '123456789aA.',
     }
   });
-*/
-
-/*var transporter = nodemailer.createTransport(directTransport({
-    name: 'smtp.gmail.com', 
-    auth: {
-        user: 'hirohitogame@gmail.com',
-        pass: 'Mrk768437!',
-      }
-}));*/
-
-
-
-
 
 //creating userType to return a user in queries or mutations
 //this returns a type that includes
@@ -134,7 +120,7 @@ const listType = new GraphQLObjectType({
             type: new GraphQLList(userType),
             resolve: async(parent,args)=>{
                 const list = await List.findById(parent.id)
-                console.log(list.admins);
+                
                 const users = await User.find({email:list.admins})
                 return users
             }
@@ -289,13 +275,29 @@ const RootQuery = new GraphQLObjectType({
     }
 })
 
+
+
+
+
+
+
+
+
+
 //mutations for database post
 const Mutation = new GraphQLObjectType({
     name: 'MutationType',
     fields:{
-        //register by name email and password
+
+        /*
+            Register by name,email and password
+            If user isn't existing returns error
+            Sends a verification email to user
+            If user doesn't accept that verification will expire in 1 day.
+            Doesn't create the user, just sends mail
+        */
         register:{
-            type:userType,
+            type:loginTokenType,
             args:{
                 name:{type:new GraphQLNonNull(GraphQLString)},
                 email:{type: new GraphQLNonNull(GraphQLString)},
@@ -314,21 +316,74 @@ const Mutation = new GraphQLObjectType({
                     
                 }
                 else{
-                    let logT = new Log({
+                    const emailToken = jwt.sign({
                         email: args.email,
+                        name:args.name,
+                        password: args.password
+                    },
+                    process.env.EMAIL_TOKEN,
+                    {
+                        expiresIn:'1d'
+                    }
+                    )   
+                    
+                    const url = `http://localhost:3000/activate-account/`
+                                  
+                    await transporter.sendMail({
+                        from:'todoly.noreply@gmail.com',
+                        to:args.email,
+                        subject:'Confirm',
+                        html:`<p>Click the link below to confirm your email</p><br/>
+                        <a>${url}${emailToken}</a>`
+                    },function(err,info){
+                        if(err){
+                            console.log(err)
+                            return;
+                        }
+                        console.log("Sent" + info.response);
+                    })     
+                    return await {token:emailToken,email:args.email,name:args.name}
+                }
+                
+            }
+        },
+
+        /*
+            User gets the verification link as an e-mail
+            If there is no such token returns error
+            If token matches creates the user in the database
+        */
+        activateAccount:{
+            type:userType,
+            args:{
+                token:{type:GraphQLString}
+            },
+            resolve: async(parent,args,req)=>{
+
+                if(args.token){
+                    let decodedToken;
+                    try{
+                        decodedToken = jwt.verify(args.token, process.env.EMAIL_TOKEN)
+                    }
+                    catch(err){
+                        return new Error("No match")
+                    }
+                    let logT = new Log({
+                        email: decodedToken.email,
                         operation: `User created`,
                         time:Date.now()
                     })
                     logT.save()
-
-                    const hashedPassword = await bcrypt.hash(args.password,16);
+                    const hashedPassword = await bcrypt.hash(decodedToken.password,16);
                     let user = new User({
-                        name:args.name,
-                        email:args.email,
+                        email:decodedToken.email,
+                        name:decodedToken.name,
                         password:hashedPassword,
-                        //isAdmin:args.isAdmin
                     })
-                    return await user.save();
+                    return await user.save()
+                }
+                else{
+                    return new Error("Enter token")
                 }
             }
         },
@@ -655,28 +710,28 @@ const Mutation = new GraphQLObjectType({
                 listId:{type:new GraphQLNonNull(GraphQLString)}
             },
             resolve: async(parent,args,req)=>{
-                /*
+                
                 let mailOptions = {
-                    from:"hirohitogame@gmail.com",
+                    from:"todoly.noreply@gmail.com",
                     to:args.email,
                     subject:'List invitation',
                     text: `${req.email}, added you to a To'Doly list.`
                 }
-                */
+                
 
                 let user = await User.findOne({email:args.email});
                 let list = await List.findById(args.listId);
 
-                /*
+                
                 if(!user){
-                    const pw = "asd";
-                    const nUser = new User({
+                    const pw = crypto.randomBytes(48).toString('hex');
+                    user = new User({
                         email:args.email,
                         password:pw,
                         name:args.email
                     })
                     mailOptions = {
-                        from:"eapleasedontban@gmail.com",
+                        from:"todoly.noreply@gmail.com",
                         to:args.email,
                         subject:'List invitation',
                         html: `<p>Welcome, <b>${req.email}</b>, added you to a To'Doly list. 
@@ -684,22 +739,11 @@ const Mutation = new GraphQLObjectType({
                         <br/> if you don't want to register you can delete your account by clicking delete my account button.</p>
                         <br/><br/> <a>Complete your registeration</a> <br/><a>Delete your account</a>`
                     }
-                    console.log(transporter);
-                    //nUser.save()
-                    await transporter.sendMail(mailOptions).then(res=>{
-                        console.log("email sent")
-                        return;
-                    }).catch(err=>{
-                        console.error(err)
-                        return;
-                    })
+                    user.save()
                 }
-                */
                 
-                //console.log(list);
-                if(user && list) {
-                    //console.log(mailOptions);      
-                    
+                if(list) {
+                    user = await User.findOne({email:args.email});
                     const adminCheck = await List.find({admins:req.email,_id:args.listId});
                     //check for admin
                     if(adminCheck.length !== 0){ 
@@ -716,6 +760,15 @@ const Mutation = new GraphQLObjectType({
 
                         await user.updateOne({$addToSet:{listNames:list.name}})
                         await list.updateOne({$addToSet:{users:args.email}})
+
+
+                        await transporter.sendMail(mailOptions, function(err,info){
+                            if(err){
+                                console.log(err)
+                                return;
+                            }
+                            console.log("Sent" + info.response);
+                        })
 
                         let logT = new Log({
                             email: req.email,

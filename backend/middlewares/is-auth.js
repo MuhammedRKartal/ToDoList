@@ -3,10 +3,12 @@ const jwt= require("jsonwebtoken");
 const loginToken = require("../models/login-token");
 require('dotenv').config();
 
-const publicPaths = ["/graphql/login", "/graphql/register"]
+const publicPaths = ["/graphql/login", "/graphql/register","/graphql/confirmation","/graphql/activateAccount"]
 
 const checkPublicPath =(path, token)=>{
-    return publicPaths.some(endpoint=>endpoint === path) || token ==='Bearer login'
+    return publicPaths.some(endpoint=>endpoint === path || 
+        token ==='Bearer login' || 
+        path.substring(0,path.lastIndexOf('/')) === "/graphql/activateAccount")
 }
 
 module.exports = (req,res,next)=>{
@@ -16,7 +18,7 @@ module.exports = (req,res,next)=>{
     if(checkPublicPath(req.originalUrl, authHeader)){
         return next()
     }
-
+    
     //if there isn't authheader return error
     if(!authHeader){
         req.isAuth = false;

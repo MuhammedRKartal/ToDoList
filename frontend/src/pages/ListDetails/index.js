@@ -92,7 +92,7 @@ function ListDetails(props) {
                                 }
                             </div>
                             
-
+                            {data?.getList?.listItems?.length>0 ?
                             <Droppable droppableId={list.id}>
                                 {(provided) => (
                                     <List ref={provided.innerRef}>
@@ -102,7 +102,7 @@ function ListDetails(props) {
                                         {provided.placeholder}
                                     </List>
                                 )}
-                            </Droppable>
+                            </Droppable>:<Typography variant={"h5"}>No list items found.</Typography>}
                             </Grid>
                         </Grid>
                     </DragDropContext>

@@ -5,7 +5,7 @@ export const registerMutation=gql`
     mutation($name:String!,$email:String!,$password:String!){
         register(name:$name, email:$email, password:$password){
             name
-            password
+            token
             email
         }
     }
@@ -94,6 +94,16 @@ export const changeListItemDoneMutation = gql`
     mutation($itemId:String!, $value: Boolean!){
         changeListItemDone(itemId:$itemId, value: $value){
             description
+        }
+}
+`
+
+export const confirmationMutation = gql`
+    mutation($token:String!){
+        activateAccount(token:$token){
+            name
+            password
+            email
         }
 }
 `

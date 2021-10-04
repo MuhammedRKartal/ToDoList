@@ -40,7 +40,7 @@ function Lists() {
         } 
     }, [removeListData])
 
-
+    console.log(lists);
     return (
         <div>
             <div className="lists__header">
@@ -50,12 +50,16 @@ function Lists() {
                 <Button color="secondary" variant="outlined" onClick={e=>setModalOpen(true)}>Create new List</Button>
             </div>
             <div className="lists__items-wrapper">
-                {lists.map((item, index) => 
+                {lists.length>0?lists.map((item, index) => 
                     <ListCard 
                         key={index} 
                         item={item} 
                         onListDelete={onListDelete}
-                        refetch={getLists} />)}
+                        refetch={getLists} />):
+                        <Typography variant="h5" gutterBottom component="div">
+                            No lists found.
+                        </Typography>
+                        }
             </div>
             {loading && <div>Loading...</div>}
             {error && <div>An error occured. Please try again later.</div>}

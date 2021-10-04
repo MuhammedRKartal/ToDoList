@@ -44,11 +44,14 @@ function Groups() {
                 <Button color="secondary" variant="outlined" onClick={e=>setModalOpen(true)}>Create new Group</Button>
             </div>
             <div className="groups__items-wrapper">
-                {groups.map((item, index) => 
+                {groups.length>0?groups.map((item, index) => 
                     <ListCard 
                         key={index} 
                         item={item}
-                        refetch={getGroups} />)}
+                        refetch={getGroups} />):
+                        <Typography variant="h5" gutterBottom component="div">
+                            No groups found
+                        </Typography>}
             </div>
             {loading && <div>Loading...</div>}
             {error && <div>An error occured. Please try again later.</div>}

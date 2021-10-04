@@ -12,12 +12,14 @@ import Register from '../pages/Register';
 import NotFound from '../pages/NotFound';
 import Home from '../pages/Home';
 import Groups from '../pages/Groups';
+import ActivateAccount from '../pages/ActivateAccount'
 import { UserContext } from '../contexts';
 
 
 const listofPages = [
     '/sign-in',
     '/register',
+    '/activate-account',
     '/404'
 ];
 
@@ -26,29 +28,33 @@ const Routes = ({ location }) => {
     const [user, setUser] = useState(); //get current user
     //create the user 
     const value = { user: {isAuthenticated:!!localStorage.getItem('user'), user: JSON.parse(localStorage.getItem('user'))}, setUser };
+    console.log(location.pathname.split("/")[1])
 
-    if(listofPages.indexOf(location.pathname) > -1) {
+    if(listofPages.some(item=>location.pathname.indexOf(item)>-1)) {
         return (
             <UserContext.Provider value={ value }>
                 <AuthBase>
                     <Switch location={location}>
                         <Route exact path="/sign-in" component={Login}/>
                         <Route exact path="/register" component={Register}/>
+                        <Route path="/activate-account/:token" component={ActivateAccount}/>
                         <Route exact path="/404" component={NotFound}/>
                     </Switch>
+                    
                 </AuthBase>
             </UserContext.Provider>
         )
     }
     else {
+        console.log("burada")
         return (
             <UserContext.Provider value={ value }>
                 <Base>
                     <Switch location={location}>
                         <RestrictedRoute exact path="/" component={Home} />
-                            
                         <RestrictedRoute exact path="/lists" component={Lists}/>
                         <RestrictedRoute path="/lists/:id" component={ListDetails}/>
+                        
                         <RestrictedRoute exact path="/groups" component={Groups}/>
                             
                         <Redirect to={"/"}/>

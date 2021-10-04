@@ -7,6 +7,7 @@ const RestrictedRoute = props => {
 
     //if user can access the page return true
     const canAccessThePage = () => {
+        
         return user?.isAuthenticated
     }
     

@@ -20,6 +20,7 @@ const port = process.env.PORT || 4000;
 
 app.use(cors({origin:"*"}));
 
+
 //30 saniyede 10 request geçilmesin, her 30 saniyede 1 kontrol et
 
 /*

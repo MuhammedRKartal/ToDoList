@@ -15,20 +15,24 @@ function Register() {
     const [handleRegister, { data, error }] = useMutation(registerMutation);
     const history = useHistory();
 
-    const { user, setUser } = useContext(UserContext);
+    //const { user, setUser } = useContext(UserContext);
+
+    //console.log(data.register.token);
 
     //if mutation doesn't turn error write success message and go sign in page
     useEffect(() => {
         if(data){
-            toast.success('Register is successful!')
-            history.push('/sign-in')
+            toast.success('Verification has sent to your email!')
+            //history.push(`/activate-account/${data?.register?.token}`)
+            history.push("/sign-in")
         }
     }, [data])
 
     //if there is an error set user to unauthenticated
     useEffect(() => {
         if(error){
-            setUser({isAuthenticated: false, user: null})
+            //setUser({isAuthenticated: false, user: null})
+            history.push('/register')
         }
     }, [error])
 
@@ -42,6 +46,10 @@ function Register() {
             }
           });
     };
+
+    const onClose = e =>{
+        history.push('/sign-in')
+    }
 
     //input fields handlers
     const handleNameChange = e => {
@@ -106,7 +114,9 @@ function Register() {
             </Button>
             </div>
             <div className="register__action">
-                <Button>Already have an account? Sign in.</Button>
+                <Button
+                    onClick ={e=> onClose()}
+                >Already have an account? Sign in.</Button>
             </div>
         </div>
     )
