@@ -21,6 +21,7 @@ const listofPages = [
     '/sign-in',
     '/register',
     '/activate-account',
+    '/delete-account',
     '/404'
 ];
 
@@ -39,7 +40,7 @@ const Routes = ({ location }) => {
                         <Route exact path="/sign-in" component={Login}/>
                         <Route exact path="/register" component={Register}/>
                         <Route path="/activate-account/:token" component={ActivateAccount}/>
-                        <Route path="/delete-user/:token" component={DeleteUserAndBlock}/>
+                        <Route path="/delete-account/:token" component={DeleteUserAndBlock}/>
                         <Route exact path="/404" component={NotFound}/>
                     </Switch>
                     
@@ -48,7 +49,7 @@ const Routes = ({ location }) => {
         )
     }
     else {
-        console.log("burada")
+        
         return (
             <UserContext.Provider value={ value }>
                 <Base>

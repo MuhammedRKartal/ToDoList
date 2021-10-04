@@ -17,8 +17,6 @@ function Register() {
 
     //const { user, setUser } = useContext(UserContext);
 
-    //console.log(data.register.token);
-
     //if mutation doesn't turn error write success message and go sign in page
     useEffect(() => {
         if(data){

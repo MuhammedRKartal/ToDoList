@@ -33,6 +33,7 @@ const List = require('../models/list')
 const listItem = require('../models/list-item');
 const Group = require('../models/group');
 const Log = require("../models/logs");
+const BlockList = require("../models/blocklist");
 
 
 require('dotenv').config();
@@ -155,14 +156,21 @@ const loginTokenType = new GraphQLObjectType({
 })
 
 //logtype
-const logType = new GraphQLObjectType({
+/*const logType = new GraphQLObjectType({
     name:"Log",
     field:()=>({
         email:{type:GraphQLString},
         operation:{type:GraphQLString},
         time:{type:Date}
     })
-})
+})*/
+/*
+const blType = new GraphQLObjectType({
+    name:"BL",
+    field:()=>({
+        email:{type:GraphQLString}
+    })
+})*/
 
 
 //queries
@@ -491,67 +499,7 @@ const Mutation = new GraphQLObjectType({
             }
         },
 
-        //add item to list with group leader control
-        addListItem:{
-            type:listItemType,
-            args:{
-                description:{type:GraphQLString},
-                importancy:{type:GraphQLString},
-                listID:{type:GraphQLString}
-            },
-            resolve: async(parent,args,req)=>{
-                const listM = await List.findById(args.listID);
-                if(listM.type === "GROUP"){
-                    let adminCheck = await Group.find({leadMail:req.email,name:listM.group})
-                    
-                    if(adminCheck.length!==0){
-                        let listE = new listItem({
-                            description:args.description,
-                            importancy:args.importancy,
-                            listID:args.listID
-                        })
-                            
-                        await listM.updateOne({$addToSet:{listItems:listE}})
-                        listE.save()
         
-                        let logT = new Log({
-                            email: req.email,
-                            operation: `Added list item to ${listM.name}`,
-                            time:Date.now()
-                        })
-                        logT.save()
-        
-                        return await listE
-                    }
-                    else{
-                        throw new Error("Unauthorized")
-                    }
-                    
-                }
-                else{
-                    let listE = new listItem({
-                        description:args.description,
-                        importancy:args.importancy,
-                        listID:args.listID
-                    })
-                        
-                    await listM.updateOne({$addToSet:{listItems: listE}})
-                    listE.save()
-    
-                    let logT = new Log({
-                        email: req.email,
-                        operation: `Added list item to ${listM.name}`,
-                        time:Date.now()
-                    })
-                    logT.save()
-    
-                    return await listE
-                }
-                
-
-                
-            }
-        },
         /*
             create a group
             Update the user's groups
@@ -581,27 +529,40 @@ const Mutation = new GraphQLObjectType({
                 return await group
             }
         },
-        //not using it rn
+        //using it by email verification
         removeUser:{
             type:userType,
             args:{
-                email:{type:GraphQLString},
+                token:{type:GraphQLString},
             },
             resolve: async(parent,args)=>{
-                
-                const list = List.find({users:args.email})
-                await list.updateMany({$pull:{users:args.email}})
+                let decodedToken;
+                try{
+                    decodedToken = jwt.verify(args.token, process.env.EMAIL_TOKEN)
+                }
+                catch(err){
+                    return new Error("No match")
+                }
 
-                const list1 = List.find({admins:args.email})
-                await list1.updateMany({$pull:{admins:args.email}})
+                if(decodedToken){
+                    const user = await User.findOne({email:decodedToken.email})
+                   
+                    if(user){
+                        await List.updateMany({users:decodedToken.email},{$pull:{users:decodedToken.email}})
+                        await List.updateMany({admins:decodedToken.email},{$pull:{admins:decodedToken.email}})
 
-                const group = Group.find({users:args.email})
-                await group.updateMany({$pull:{users:args.email}})
+                        await Group.updateMany({users:decodedToken.email},{$pull:{users:decodedToken.email}})
+                        await Group.updateMany({leadMail:decodedToken.email},{leadMail:null})
 
-                const group1 = Group.find({leadMail:args.email})
-                await group1.updateMany({leadMail:null})
-
-                return await User.findOneAndRemove({email:args.email});
+                        return await user.deleteOne({email:decodedToken.email})
+                    }
+                    else{
+                        return new Error("Your account is not in the list")
+                    }   
+                }
+                else{
+                    return new Error("Errrrr")
+                }
             }
         },
         /*
@@ -695,7 +656,67 @@ const Mutation = new GraphQLObjectType({
                 }
             }
         },
+        //add item to list with group leader control
+        addListItem:{
+            type:listItemType,
+            args:{
+                description:{type:GraphQLString},
+                importancy:{type:GraphQLString},
+                listID:{type:GraphQLString}
+            },
+            resolve: async(parent,args,req)=>{
+                const listM = await List.findById(args.listID);
+                if(listM.type === "GROUP"){
+                    let adminCheck = await Group.find({leadMail:req.email,name:listM.group})
+                    
+                    if(adminCheck.length!==0){
+                        let listE = new listItem({
+                            description:args.description,
+                            importancy:args.importancy,
+                            listID:args.listID
+                        })
+                            
+                        await listM.updateOne({$addToSet:{listItems:listE}})
+                        listE.save()
+        
+                        let logT = new Log({
+                            email: req.email,
+                            operation: `Added list item to ${listM.name}`,
+                            time:Date.now()
+                        })
+                        logT.save()
+        
+                        return await listE
+                    }
+                    else{
+                        throw new Error("Unauthorized")
+                    }
+                    
+                }
+                else{
+                    let listE = new listItem({
+                        description:args.description,
+                        importancy:args.importancy,
+                        listID:args.listID
+                    })
+                        
+                    await listM.updateOne({$addToSet:{listItems: listE}})
+                    listE.save()
+    
+                    let logT = new Log({
+                        email: req.email,
+                        operation: `Added list item to ${listM.name}`,
+                        time:Date.now()
+                    })
+                    logT.save()
+    
+                    return await listE
+                }
+                
 
+                
+            }
+        },
 
         /*
             adding user to a given list
@@ -704,6 +725,7 @@ const Mutation = new GraphQLObjectType({
             if email or list Id is invalid return error
             updates user
         */
+       
         addUserToList:{
             type:userType,
             args:{
@@ -711,7 +733,11 @@ const Mutation = new GraphQLObjectType({
                 listId:{type:new GraphQLNonNull(GraphQLString)}
             },
             resolve: async(parent,args,req)=>{
-                
+                const isBlocked = await BlockList.find({email:args.email})
+                if(isBlocked){
+                    return new Error("This account is blocked");
+                }
+
                 let mailOptions = {
                     from:"todoly.noreply@gmail.com",
                     to:args.email,
@@ -728,42 +754,43 @@ const Mutation = new GraphQLObjectType({
                 
                 if(!user){
                     const pw = crypto.randomBytes(12).toString('hex');
+                    const hashedPassword = await bcrypt.hash(pw,16);
                     user = new User({
                         email:args.email,
-                        password:pw,
+                        password:hashedPassword,
                         name:args.email
                     })
-                    /*
+                    
                     const emailToken = jwt.sign({
-                        email: args.email,
-                        name:args.email,
-                        password: pw
-                    },
-                    process.env.EMAIL_TOKEN,
-                    {
-                        expiresIn:'1d'
-                    }
+                            email: args.email,
+                            name:args.email,
+                            password: pw
+                        },
+                        process.env.EMAIL_TOKEN,
+                        {
+                            expiresIn:'1d'
+                        }
                     )   
-                    */
+                    
                     mailOptions = {
                         from:"todoly.noreply@gmail.com",
                         to:args.email,
                         subject:'List invitation',
-                        html: `<p>Welcome, <b>${req.email}</b>, added you to a To'Doly list. 
-                        <br/> Your account is automatically created. 
-                        <br/> You can log in the website with your email address.
-                        <br/> Your password is: ${pw}
-                        
-                        <br/><br/> Delete my account and add me to block list: ${deleteurl}
-                        <br/> Sign in: ${signinurl}
-                        </p>
+                        html: `<p>Welcome, <b>${req.email}</b>, added you to a To'Doly list.
+                        <br/>Your account is automatically created. 
+                        <br/>You can log in the website with your email address.
+                        <br/>Your password is: ${pw}
+                        <br/><br/>Delete my account and add me to block list: ${deleteurl}${emailToken}
+                        <br/>Sign in: ${signinurl}</p>
                         `
                     }
-                    user.save()
+                    
+                    await user.save()
                 }
                 
                 if(list) {
                     user = await User.findOne({email:args.email});
+                    
                     const adminCheck = await List.find({admins:req.email,_id:args.listId});
                     //check for admin
                     if(adminCheck.length !== 0){ 
@@ -826,6 +853,11 @@ const Mutation = new GraphQLObjectType({
                 groupId:{type:new GraphQLNonNull(GraphQLString)}
             },
             resolve: async(parent,args,req)=>{
+                const isBlocked = await BlockList.find({email:args.email})
+                if(isBlocked){
+                    return new Error("This account is blocked");
+                }
+                
                 const user = await User.findOne({email:args.email});
                 const group = await Group.findById(args.groupId);
                 
@@ -870,6 +902,35 @@ const Mutation = new GraphQLObjectType({
                     }  
                 }
             } 
+        },
+        addUserToBlockList:{
+            type:userType,
+            args:{
+                token:{type:GraphQLString},
+            },
+            resolve: async(parent,args)=>{
+                let decodedToken;
+                try{
+                    decodedToken = jwt.verify(args.token, process.env.EMAIL_TOKEN)
+                }
+                catch(err){
+                    return new Error("No match")
+                }
+
+                const isInside = await BlockList.find({email:decodedToken.email})
+                if(isInside.length>0){
+                    return new Error("You are already in block list")
+                }
+                else{
+                    blocked = new BlockList({
+                        email:decodedToken.email
+                    })
+                    await blocked.save()
+                }
+                
+                return await blocked
+                
+            }
         },
 
         //change the value of isDone like true or false

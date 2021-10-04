@@ -40,8 +40,16 @@ export const createGroupMutation=gql`
 `
 
 export const removeUserMutation=gql`
-mutation($email:String!){
-    removeUser(email:$email){
+mutation($token:String!){
+    removeUser(token:$token){
+        email
+    }
+}
+`
+
+export const addUserToBlockListMutation=gql`
+mutation($token:String!){
+    addUserToBlockList(token:$token){
         email
     }
 }

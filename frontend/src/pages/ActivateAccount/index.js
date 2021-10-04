@@ -13,7 +13,7 @@ function ActivateAccount() {
     const history = useHistory();
     //const { user, setUser } = useContext(UserContext);
 
-    const [handleConfirmation, { data, loading, error }] = useMutation(confirmationMutation); //call create group mutation once
+    const [handleConfirmation, { data, error }] = useMutation(confirmationMutation); //call create group mutation once
 
     //on calling register mutation set variables
     const onVerification = e => {
