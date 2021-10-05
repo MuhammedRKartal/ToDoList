@@ -49,6 +49,9 @@ const transporter = nodemailer.createTransport({
     }
   });
 
+
+
+
 //creating userType to return a user in queries or mutations
 //this returns a type that includes
 //name,email,password,role,all groups that user is attending, all lists that user is attending
@@ -734,7 +737,8 @@ const Mutation = new GraphQLObjectType({
             },
             resolve: async(parent,args,req)=>{
                 const isBlocked = await BlockList.find({email:args.email})
-                if(isBlocked){
+
+                if(isBlocked.length >0){
                     return new Error("This account is blocked");
                 }
 
@@ -780,14 +784,15 @@ const Mutation = new GraphQLObjectType({
                         <br/>Your account is automatically created. 
                         <br/>You can log in the website with your email address.
                         <br/>Your password is: ${pw}
-                        <br/><br/>Delete my account and add me to block list: ${deleteurl}${emailToken}
-                        <br/>Sign in: ${signinurl}</p>
+                        <br/><br/>Delete my account and add me to block list: <br/> ${deleteurl}${emailToken}
+                        <br/><br/>Sign in: ${signinurl}</p>
                         `
                     }
                     
                     await user.save()
                 }
                 
+
                 if(list) {
                     user = await User.findOne({email:args.email});
                     
@@ -809,7 +814,7 @@ const Mutation = new GraphQLObjectType({
                         await list.updateOne({$addToSet:{users:args.email}})
 
 
-                        await transporter.sendMail(mailOptions, function(err,info){
+                        transporter.sendMail(mailOptions, function(err,info){
                             if(err){
                                 console.log(err)
                                 return;
@@ -853,10 +858,12 @@ const Mutation = new GraphQLObjectType({
                 groupId:{type:new GraphQLNonNull(GraphQLString)}
             },
             resolve: async(parent,args,req)=>{
+                console.log("a");
                 const isBlocked = await BlockList.find({email:args.email})
-                if(isBlocked){
+                
+                /*if(isBlocked){
                     return new Error("This account is blocked");
-                }
+                }*/
                 
                 const user = await User.findOne({email:args.email});
                 const group = await Group.findById(args.groupId);
